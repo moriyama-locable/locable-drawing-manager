@@ -421,6 +421,7 @@ body {
 }
 
 .settings-actions button,
+.settings-actions .button-link,
 .change-form button,
 .changes-project-select select {
   padding: 6px 14px;
@@ -429,6 +430,12 @@ body {
   background: var(--color-white);
   font-size: 13px;
   cursor: pointer;
+}
+
+.settings-actions .button-link {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .settings-actions button:last-child,
