@@ -386,6 +386,28 @@ body {
   margin: 0;
 }
 
+.detail-grid input,
+.detail-grid select,
+.modal-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border, #d8dade);
+  border-radius: 4px;
+}
+
+.modal-panel textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .related-change-list {
   list-style: none;
   margin: 0;
