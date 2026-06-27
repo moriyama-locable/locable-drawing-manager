@@ -85,6 +85,7 @@ function DrawingsPage() {
   const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [importBusy, setImportBusy] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function loadProjects() {
@@ -220,31 +221,15 @@ function DrawingsPage() {
     }
   }
 
-  const progressStats = useMemo(() => {
-    const progressByStatus = new Map(statusMasterItems.map((item) => [item.status_name, item.progress_percent ?? 0]))
-    const needed = drawings.filter((d) => d.necessity !== '不要')
-    const notNeeded = drawings.length - needed.length
-    const approved = needed.filter((d) => d.status === '承認済').length
-    const progressSum = needed.reduce((sum, d) => sum + (progressByStatus.get(d.status) ?? 0), 0)
-    const percent = needed.length > 0 ? Math.round(progressSum / needed.length) : 0
-    const statusCounts = new Map<string, number>()
-    for (const d of needed) {
-      statusCounts.set(d.status, (statusCounts.get(d.status) ?? 0) + 1)
-    }
-    const currentLodCounts = new Map<number, number>()
-    for (const d of needed) {
-      currentLodCounts.set(d.current_lod, (currentLodCounts.get(d.current_lod) ?? 0) + 1)
-    }
-    return {
-      total: drawings.length,
-      needed: needed.length,
-      notNeeded,
-      approved,
-      percent,
-      statusCounts: Array.from(statusCounts.entries()),
-      currentLodCounts: Array.from(currentLodCounts.entries()).sort((a, b) => a[0] - b[0]),
-    }
-  }, [drawings, statusMasterItems])
+  const workQueueStats = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const notStarted = drawings.filter((d) => d.status === '未着手').length
+    const needsReview = drawings.filter((d) => d.status === '要確認').length
+    const hasDeadline = drawings.filter(
+      (d) => d.final_deadline && d.final_deadline >= today && d.status !== '承認済'
+    ).length
+    return { notStarted, needsReview, hasDeadline }
+  }, [drawings])
 
   async function handleStatusChange(drawingId: string, status: string) {
     setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
@@ -437,11 +422,53 @@ function DrawingsPage() {
 
   return (
     <div className="page drawings-page">
-      <h1>図面管理</h1>
+      <div className="drawings-page-header">
+        <div>
+          <h1>図面管理</h1>
+          {selectedProject && (
+            <p className="drawings-breadcrumb">
+              {selectedProject.project_name} /{' '}
+              {phases.find((phase) => phase.phase_code === selectedProject.current_phase)?.phase_name ??
+                selectedProject.current_phase}
+            </p>
+          )}
+        </div>
+        {selectedProjectId && (
+          <div className="drawings-header-actions">
+            <button type="button" disabled={importBusy} onClick={() => fileInputRef.current?.click()}>
+              {importBusy ? '取り込み中...' : 'CSVインポート'}
+            </button>
+            <button type="button" onClick={handleDownloadTemplate}>
+              テンプレートDL
+            </button>
+            <button type="button" className="primary" onClick={() => setShowCreateForm((prev) => !prev)}>
+              + 図面を追加
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              style={{ display: 'none' }}
+              onChange={handleImportFile}
+            />
+          </div>
+        )}
+      </div>
+
       {error && <p className="error-text">{error}</p>}
       {notice && <p className="empty-hint">{notice}</p>}
       {focus === 'lod_shortage' && <p className="empty-hint">LOD不足の図面のみ表示しています。</p>}
       {focus === 'overdue' && <p className="empty-hint">期限超過の図面のみ表示しています。</p>}
+
+      {showCreateForm && selectedProjectId && (
+        <DrawingCreateForm
+          projectId={selectedProjectId}
+          onCreated={() => {
+            loadDrawings(selectedProjectId)
+            setShowCreateForm(false)
+          }}
+        />
+      )}
 
       <div className="drawings-layout">
         <aside className="drawings-left-pane">
@@ -497,73 +524,26 @@ function DrawingsPage() {
               )}
             </div>
           )}
-
-          {selectedProjectId && drawings.length > 0 && (
-            <div className="progress-summary">
-              <div className="progress-summary-header">
-                <span className="progress-summary-title">全体進捗</span>
-                <span className="progress-summary-percent">{progressStats.percent}%</span>
-              </div>
-              <div className="progress-bar-track">
-                <div className="progress-bar-fill" style={{ width: `${progressStats.percent}%` }} />
-              </div>
-              <div className="progress-summary-meta">
-                <span>対応対象 {progressStats.needed}件中 承認済 {progressStats.approved}件</span>
-                <span className="progress-summary-na">対応不要 {progressStats.notNeeded}件（無視してOK）</span>
-              </div>
-              <div className="progress-status-chips">
-                {progressStats.statusCounts.map(([status, count]) => (
-                  <span key={status} className="progress-status-chip">
-                    {status} {count}件
-                  </span>
-                ))}
-              </div>
-              <div className="lod-progress-row">
-                <span className="lod-progress-label">現在LOD分布</span>
-                <div className="lod-progress-scale">
-                  {[0, 1, 2, 3, 4, 5, 6].map((lod) => {
-                    const count = progressStats.currentLodCounts.find(([l]) => l === lod)?.[1] ?? 0
-                    return (
-                      <div key={lod} className="lod-progress-step" title={`LOD${lod}: ${count}件`}>
-                        <div
-                          className={count > 0 ? 'lod-progress-dot filled' : 'lod-progress-dot'}
-                        />
-                        <span className="lod-progress-step-label">
-                          LOD{lod}
-                          {count > 0 ? `(${count})` : ''}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
         </aside>
 
-        <section className="drawings-right-pane">
+        <section className="drawings-center-pane">
           {selectedProjectId && (
-            <DrawingCreateForm
-              projectId={selectedProjectId}
-              onCreated={() => loadDrawings(selectedProjectId)}
-            />
-          )}
-
-          {selectedProjectId && (
-            <div className="csv-import-row">
-              <button type="button" disabled={importBusy} onClick={() => fileInputRef.current?.click()}>
-                {importBusy ? '取り込み中...' : 'CSVインポート'}
-              </button>
-              <button type="button" className="link-button" onClick={handleDownloadTemplate}>
-                テンプレートをダウンロード
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                style={{ display: 'none' }}
-                onChange={handleImportFile}
-              />
+            <div className="work-queue">
+              <span className="work-queue-title">作業キュー</span>
+              <div className="work-queue-items">
+                <div className="work-queue-chip">
+                  <span>未着手</span>
+                  <span className="work-queue-count">{workQueueStats.notStarted}</span>
+                </div>
+                <div className={workQueueStats.needsReview > 0 ? 'work-queue-chip warn' : 'work-queue-chip'}>
+                  <span>要確認</span>
+                  <span className="work-queue-count">{workQueueStats.needsReview}</span>
+                </div>
+                <div className={workQueueStats.hasDeadline > 0 ? 'work-queue-chip warn' : 'work-queue-chip'}>
+                  <span>期限あり</span>
+                  <span className="work-queue-count">{workQueueStats.hasDeadline}</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -654,11 +634,23 @@ function DrawingsPage() {
             <DrawingCardView drawings={sortedDrawings} onOpenDetail={setSelectedDrawingId} />
           )}
         </section>
-      </div>
 
-      {selectedDrawingId && (
-        <DrawingDetailModal drawingId={selectedDrawingId} onClose={() => setSelectedDrawingId(null)} />
-      )}
+        <aside className="drawings-detail-pane">
+          {selectedDrawingId ? (
+            <DrawingDetailModal
+              drawingId={selectedDrawingId}
+              onClose={() => setSelectedDrawingId(null)}
+              variant="panel"
+            />
+          ) : (
+            <div className="detail-pane-placeholder">
+              <span className="detail-pane-placeholder-icon">📄</span>
+              <span>選択中の図面</span>
+              <span>表から図面を選択すると、詳細情報がここに表示されます。</span>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   )
 }
