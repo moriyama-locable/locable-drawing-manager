@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import logoUrl from '../../assets/locable-logo-white.svg'
 
 const navItems = [
   { to: '/', label: 'ダッシュボード' },
@@ -11,6 +12,7 @@ function Layout() {
   return (
     <div className="app-shell">
       <header className="app-header">
+        <img src={logoUrl} alt="LOCABLE" className="app-logo" />
         <span className="app-title">図面管理システム</span>
         <nav className="app-nav">
           {navItems.map((item) => (

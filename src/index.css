@@ -41,6 +41,12 @@ body {
   color: var(--color-white);
 }
 
+.app-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
 .app-title {
   font-weight: 500;
   letter-spacing: 0.04em;
