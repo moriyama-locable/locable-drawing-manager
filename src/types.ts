@@ -18,13 +18,19 @@ export interface Project {
 
 export type LodJudgement = '不要' | '不足' | 'OK' | '過剰'
 
-export const DRAWING_STATUS_OPTIONS = ['未着手', '作図中', '確認中', '承認済'] as const
+export interface DrawingTypeOption {
+  drawing_type: string
+  sort_order: number | null
+}
 
-export const DRAWING_STATUS_PROGRESS: Record<string, number> = {
-  未着手: 0,
-  作図中: 50,
-  確認中: 70,
-  承認済: 100,
+export type StatusMasterGroup = 'drawing' | 'change' | 'lock'
+
+export interface StatusMasterItem {
+  status_id: string
+  status_group: StatusMasterGroup
+  status_name: string
+  sort_order: number | null
+  progress_percent: number | null
 }
 
 export interface Drawing {

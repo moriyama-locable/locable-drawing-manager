@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchDrawingDetail, updateDrawing } from '../api/client'
+import { fetchDrawingDetail, fetchDrawingTypes, fetchStatusMaster, updateDrawing } from '../api/client'
 import type { ChangeItem, Drawing } from '../types'
-import { DRAWING_STATUS_OPTIONS } from '../types'
 import LodBadge from './LodBadge'
 
 interface DrawingDetailModalProps {
@@ -49,6 +48,9 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState<EditableDrawing | null>(null)
   const [saving, setSaving] = useState(false)
+  const [drawingTypeOptions, setDrawingTypeOptions] = useState<string[]>([])
+  const [statusOptions, setStatusOptions] = useState<string[]>([])
+  const [lockStatusOptions, setLockStatusOptions] = useState<string[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +67,18 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
       cancelled = true
     }
   }, [drawingId])
+
+  useEffect(() => {
+    fetchDrawingTypes()
+      .then((data) => setDrawingTypeOptions(data.drawing_types.map((t) => t.drawing_type)))
+      .catch(() => {})
+    fetchStatusMaster('drawing')
+      .then((data) => setStatusOptions(data.status_master.map((s) => s.status_name)))
+      .catch(() => {})
+    fetchStatusMaster('lock')
+      .then((data) => setLockStatusOptions(data.status_master.map((s) => s.status_name)))
+      .catch(() => {})
+  }, [])
 
   function startEditing() {
     if (!drawing) return
@@ -213,10 +227,16 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
               <dl className="detail-grid">
                 <dt>図面種別</dt>
                 <dd>
-                  <input
-                    value={form.drawing_type}
-                    onChange={(e) => updateField('drawing_type', e.target.value)}
-                  />
+                  <select value={form.drawing_type} onChange={(e) => updateField('drawing_type', e.target.value)}>
+                    {!drawingTypeOptions.includes(form.drawing_type) && (
+                      <option value={form.drawing_type}>{form.drawing_type}</option>
+                    )}
+                    {drawingTypeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </dd>
                 <dt>必要LOD</dt>
                 <dd>
@@ -243,10 +263,10 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
                 <dt>ステータス</dt>
                 <dd>
                   <select value={form.status} onChange={(e) => updateField('status', e.target.value)}>
-                    {!DRAWING_STATUS_OPTIONS.includes(form.status as never) && (
+                    {!statusOptions.includes(form.status) && (
                       <option value={form.status}>{form.status}</option>
                     )}
-                    {DRAWING_STATUS_OPTIONS.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
@@ -255,10 +275,16 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
                 </dd>
                 <dt>ロック状態</dt>
                 <dd>
-                  <input
-                    value={form.lock_status}
-                    onChange={(e) => updateField('lock_status', e.target.value)}
-                  />
+                  <select value={form.lock_status} onChange={(e) => updateField('lock_status', e.target.value)}>
+                    {!lockStatusOptions.includes(form.lock_status) && (
+                      <option value={form.lock_status}>{form.lock_status}</option>
+                    )}
+                    {lockStatusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
                 </dd>
                 <dt>承認状態</dt>
                 <dd>

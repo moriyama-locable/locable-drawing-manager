@@ -1,5 +1,4 @@
 import type { Drawing } from '../types'
-import { DRAWING_STATUS_OPTIONS } from '../types'
 import LodBadge from './LodBadge'
 
 export type DrawingSortKey =
@@ -37,6 +36,7 @@ interface DrawingListViewProps {
   drawings: Drawing[]
   onOpenDetail: (drawingId: string) => void
   onStatusChange?: (drawingId: string, status: string) => void
+  statusOptions?: string[]
   sortKey?: DrawingSortKey | null
   sortDirection?: SortDirection
   onSortChange?: (key: DrawingSortKey) => void
@@ -46,6 +46,7 @@ function DrawingListView({
   drawings,
   onOpenDetail,
   onStatusChange,
+  statusOptions = [],
   sortKey,
   sortDirection,
   onSortChange,
@@ -103,10 +104,10 @@ function DrawingListView({
                     value={drawing.status}
                     onChange={(e) => onStatusChange(drawing.drawing_id, e.target.value)}
                   >
-                    {!DRAWING_STATUS_OPTIONS.includes(drawing.status as never) && (
+                    {!statusOptions.includes(drawing.status) && (
                       <option value={drawing.status}>{drawing.status}</option>
                     )}
-                    {DRAWING_STATUS_OPTIONS.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
