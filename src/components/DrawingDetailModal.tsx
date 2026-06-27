@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchDrawingDetail, updateDrawing } from '../api/client'
 import type { ChangeItem, Drawing } from '../types'
+import { DRAWING_STATUS_OPTIONS } from '../types'
 import LodBadge from './LodBadge'
 
 interface DrawingDetailModalProps {
@@ -241,7 +242,16 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
               <dl className="detail-grid">
                 <dt>ステータス</dt>
                 <dd>
-                  <input value={form.status} onChange={(e) => updateField('status', e.target.value)} />
+                  <select value={form.status} onChange={(e) => updateField('status', e.target.value)}>
+                    {!DRAWING_STATUS_OPTIONS.includes(form.status as never) && (
+                      <option value={form.status}>{form.status}</option>
+                    )}
+                    {DRAWING_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
                 </dd>
                 <dt>ロック状態</dt>
                 <dd>

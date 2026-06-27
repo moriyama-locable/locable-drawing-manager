@@ -79,6 +79,28 @@ export function createDrawing(
   })
 }
 
+export interface ImportDrawingRow {
+  drawing_no: string
+  drawing_name: string
+  drawing_type: string
+  necessity?: string
+  required_lod?: number
+  current_lod?: number
+  status: string
+  lock_status?: string
+  final_deadline?: string
+}
+
+export function importDrawings(
+  projectId: string,
+  rows: ImportDrawingRow[]
+): Promise<{ imported_count: number; errors: Array<{ row: number; message: string }> }> {
+  return request(`/api/projects/${projectId}/drawings/import`, {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  })
+}
+
 export function fetchDrawingDetail(
   drawingId: string
 ): Promise<{ drawing: Drawing; related_changes: ChangeItem[] }> {
@@ -158,6 +180,10 @@ export interface DashboardSummary {
   change_alert_drawings: number
   overdue_count: number
   locked_drawings: number
+  status_breakdown: Array<{ status: string; count: number }>
+  lod_distribution: Array<{ current_lod: number; count: number }>
+  not_needed_drawings: number
+  progress_percent: number
   today_priority_items: Array<{
     drawing_id: string
     drawing_no: string
