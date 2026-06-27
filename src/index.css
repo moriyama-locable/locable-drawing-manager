@@ -154,6 +154,36 @@ body {
   opacity: 0.7;
 }
 
+.project-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.project-create-form input {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.project-create-form button {
+  padding: 6px 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.drawing-create-form {
+  margin-bottom: 12px;
+}
+
 .drawings-toolbar {
   display: flex;
   justify-content: space-between;

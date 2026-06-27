@@ -17,8 +17,41 @@ export function fetchProjects(): Promise<{ projects: Project[] }> {
   return request('/api/projects')
 }
 
+export interface CreateProjectInput {
+  project_name: string
+  current_phase: string
+}
+
+export function createProject(input: CreateProjectInput): Promise<{ project_id: string }> {
+  return request('/api/projects', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
 export function fetchDrawings(projectId: string): Promise<{ drawings: Drawing[] }> {
   return request(`/api/projects/${projectId}/drawings`)
+}
+
+export interface CreateDrawingInput {
+  drawing_no: string
+  drawing_name: string
+  drawing_type: string
+  necessity?: string
+  current_lod?: number
+  status: string
+  lock_status?: string
+  final_deadline?: string
+}
+
+export function createDrawing(
+  projectId: string,
+  input: CreateDrawingInput
+): Promise<{ drawing_id: string }> {
+  return request(`/api/projects/${projectId}/drawings`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export function fetchDrawingDetail(
