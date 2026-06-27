@@ -45,6 +45,12 @@ function SettingsPage() {
       <p>フェーズ × 図面種別ごとの必要LODを管理します。</p>
       {error && <p className="error-text">{error}</p>}
 
+      <div className="settings-actions">
+        <a className="button-link" href="/manual.html" target="_blank" rel="noopener noreferrer">
+          セットアップマニュアルを開く
+        </a>
+      </div>
+
       <table className="drawing-table">
         <thead>
           <tr>

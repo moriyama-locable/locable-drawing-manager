@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>セットアップマニュアル | 図面管理システム</title>
+<style>
+  :root {
+    color-scheme: light;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    background: #f7f7f8;
+    line-height: 1.7;
+  }
+  .manual-header {
+    background: #1f2933;
+    color: #fff;
+    padding: 24px 32px;
+  }
+  .manual-header h1 {
+    margin: 0;
+    font-size: 22px;
+  }
+  .manual-container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  nav.toc {
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 32px;
+  }
+  nav.toc h2 {
+    font-size: 15px;
+    margin: 0 0 8px;
+  }
+  nav.toc ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  section {
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  section h2 {
+    margin-top: 0;
+    font-size: 18px;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 8px;
+  }
+  section h3 {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  pre {
+    background: #f0f0f0;
+    padding: 12px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 14px;
+  }
+  th {
+    background: #f3f4f6;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+  <header class="manual-header">
+    <h1>図面管理システム セットアップマニュアル</h1>
+  </header>
+  <div class="manual-container">
+    <a class="back-link" href="/settings">← 設定ページへ戻る</a>
+
+    <nav class="toc">
+      <h2>目次</h2>
+      <ol>
+        <li><a href="#overview">システム概要</a></li>
+        <li><a href="#requirements">必要環境</a></li>
+        <li><a href="#install">インストールと起動</a></li>
+        <li><a href="#auth">Cloudflare Access 認証</a></li>
+        <li><a href="#db">D1マイグレーション</a></li>
+        <li><a href="#drive">Google Drive 連携</a></li>
+        <li><a href="#usage">基本的な使い方</a></li>
+        <li><a href="#faq">よくある質問</a></li>
+      </ol>
+    </nav>
+
+    <section id="overview">
+      <h2>1. システム概要</h2>
+      <p>
+        本システムは、LOCABLE における図面管理・LOD（Level of Detail）管理・変更影響管理を行うMVPシステムです。
+        案件管理システムではなく、案件（プロジェクト）を切り替えながら図面を管理するためのツールとして設計されています。
+      </p>
+      <table>
+        <tr><th>項目</th><th>内容</th></tr>
+        <tr><td>フロントエンド</td><td>Vite + React + TypeScript</td></tr>
+        <tr><td>ホスティング</td><td>Cloudflare Pages</td></tr>
+        <tr><td>API</td><td>Cloudflare Pages Functions（<code>functions/api</code>）</td></tr>
+        <tr><td>DB</td><td>Cloudflare D1（<code>migrations/</code>）</td></tr>
+        <tr><td>認証</td><td>Cloudflare Access</td></tr>
+        <tr><td>ファイル本体</td><td>Google Drive（DBにはURLのみ保持）</td></tr>
+      </table>
+    </section>
+
+    <section id="requirements">
+      <h2>2. 必要環境</h2>
+      <ul>
+        <li>Node.js（npm が使用できること）</li>
+        <li>Cloudflare アカウント（Pages / D1 / Access を利用）</li>
+        <li>Google Drive（図面ファイルの保管先）</li>
+      </ul>
+    </section>
+
+    <section id="install">
+      <h2>3. インストールと起動</h2>
+      <p>リポジトリを取得した後、依存パッケージをインストールし、開発サーバーを起動します。</p>
+      <pre><code>npm install
+npm run dev</code></pre>
+      <p>本番ビルドは以下のコマンドで作成します。</p>
+      <pre><code>npm run build</code></pre>
+    </section>
+
+    <section id="auth">
+      <h2>4. Cloudflare Access 認証</h2>
+      <p>
+        本システムへのアクセスは Cloudflare Access によって保護されます。利用するユーザーは管理者から
+        Cloudflare Access のアクセス許可を受ける必要があります。詳細な設定はCloudflareダッシュボードの
+        Access ポリシーを参照してください。
+      </p>
+    </section>
+
+    <section id="db">
+      <h2>5. D1マイグレーション</h2>
+      <p>D1データベースへスキーマを適用するには、用途に応じて以下のコマンドを使用します。</p>
+      <pre><code># ローカル開発DBへ適用
+npm run db:migrate:dev
+
+# 開発用リモートD1へ適用
+npm run db:migrate:remote:dev
+
+# 本番用リモートD1へ適用
+npm run db:migrate:remote:prod</code></pre>
+      <p>
+        <code>wrangler.toml</code> の <code>database_id</code> は、実際のD1データベース作成後に
+        正しい値へ差し替えてください。
+      </p>
+    </section>
+
+    <section id="drive">
+      <h2>6. Google Drive 連携</h2>
+      <p>
+        図面ファイルの本体は Google Drive に保管し、データベースにはそのファイルへのURLのみを保持します。
+        図面登録時に Google Drive 上のファイルへのリンクを設定してください。
+      </p>
+    </section>
+
+    <section id="usage">
+      <h2>7. 基本的な使い方</h2>
+      <h3>ダッシュボード</h3>
+      <p>進行中プロジェクト数、LOD不足図面数、変更影響あり図面数、期限超過数などの概況を確認できます。</p>
+      <h3>図面管理</h3>
+      <p>案件（プロジェクト）を選択し、図面の一覧表示・カード表示・検索・新規登録・詳細確認を行います。</p>
+      <h3>変更項目</h3>
+      <p>変更理由・内容・影響度を登録し、関連する図面と紐づけて影響を管理します。</p>
+      <h3>設定</h3>
+      <p>フェーズ × 図面種別ごとの必要LOD（必須・任意・不要）を管理します。</p>
+    </section>
+
+    <section id="faq">
+      <h2>8. よくある質問</h2>
+      <h3>Q. ログインできない場合は？</h3>
+      <p>A. Cloudflare Access の許可設定がされているかシステム管理者に確認してください。</p>
+      <h3>Q. 図面ファイル本体はどこに保存されますか？</h3>
+      <p>A. ファイル本体は Google Drive に保管され、本システムにはリンクURLのみが保存されます。</p>
+    </section>
+  </div>
+</body>
+</html>
