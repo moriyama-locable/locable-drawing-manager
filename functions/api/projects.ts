@@ -1,5 +1,6 @@
 import type { Env } from './_lib/types'
 import { generateId, jsonError, nowIso, writeAuditLog } from './_lib/http'
+import { buildDefaultDrawingStatements } from './_lib/defaultDrawings'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const statusParam = new URL(context.request.url).searchParams.get('status')
@@ -59,5 +60,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     after: body,
   })
 
-  return Response.json({ project_id: projectId }, { status: 201 })
+  const { statements, createdCount } = await buildDefaultDrawingStatements(
+    context.env.DB,
+    projectId,
+    body.current_phase,
+    new Set(),
+    1
+  )
+
+  if (statements.length > 0) {
+    await context.env.DB.batch(statements)
+    await writeAuditLog(context.env.DB, {
+      entityType: 'drawing',
+      entityId: projectId,
+      action: 'default_generate',
+      after: { phase_code: body.current_phase, created_count: createdCount },
+    })
+  }
+
+  return Response.json({ project_id: projectId, default_drawings_created: createdCount }, { status: 201 })
 }

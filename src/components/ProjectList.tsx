@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createProject, fetchProjects } from '../api/client'
-import type { Project } from '../types'
+import { createProject, fetchPhases, fetchProjects } from '../api/client'
+import type { Phase, Project } from '../types'
 
 interface ProjectListProps {
   projects: Project[]
@@ -12,9 +12,16 @@ interface ProjectListProps {
 function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: ProjectListProps) {
   const [projectName, setProjectName] = useState('')
   const [currentPhase, setCurrentPhase] = useState('')
+  const [phases, setPhases] = useState<Phase[]>([])
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'active' | 'archived'>('active')
   const [archivedProjects, setArchivedProjects] = useState<Project[]>([])
+
+  useEffect(() => {
+    fetchPhases()
+      .then((data) => setPhases(data.phases))
+      .catch((err: Error) => setError(err.message))
+  }, [])
 
   useEffect(() => {
     if (tab !== 'archived') return
@@ -22,6 +29,10 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
       .then((data) => setArchivedProjects(data.projects))
       .catch((err: Error) => setError(err.message))
   }, [tab])
+
+  function phaseName(phaseCode: string): string {
+    return phases.find((phase) => phase.phase_code === phaseCode)?.phase_name ?? phaseCode
+  }
 
   async function handleCreate() {
     if (!projectName || !currentPhase) return
@@ -66,7 +77,7 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
                 onClick={() => onSelect(project.project_id)}
               >
                 <span className="project-name">{project.project_name}</span>
-                <span className="project-phase">{project.current_phase}</span>
+                <span className="project-phase">{phaseName(project.current_phase)}</span>
               </button>
             </li>
           ))}
@@ -80,11 +91,14 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
           />
-          <input
-            placeholder="フェーズ"
-            value={currentPhase}
-            onChange={(e) => setCurrentPhase(e.target.value)}
-          />
+          <select value={currentPhase} onChange={(e) => setCurrentPhase(e.target.value)}>
+            <option value="">フェーズを選択</option>
+            {phases.map((phase) => (
+              <option key={phase.phase_code} value={phase.phase_code}>
+                {phase.phase_name}
+              </option>
+            ))}
+          </select>
           <button type="button" onClick={handleCreate}>
             + プロジェクトを追加
           </button>
