@@ -1,30 +1,78 @@
 import type { Drawing } from '../types'
-import { DRAWING_STATUS_OPTIONS } from '../types'
 import LodBadge from './LodBadge'
+
+export type DrawingSortKey =
+  | 'drawing_no'
+  | 'drawing_name'
+  | 'drawing_type'
+  | 'necessity'
+  | 'required_lod'
+  | 'current_lod'
+  | 'lod_judgement'
+  | 'status'
+  | 'lock_status'
+  | 'final_deadline'
+  | 'has_change_alert'
+  | 'next_action'
+
+export type SortDirection = 'asc' | 'desc'
+
+const COLUMNS: Array<{ key: DrawingSortKey; label: string }> = [
+  { key: 'drawing_no', label: '図面番号' },
+  { key: 'drawing_name', label: '図面名称' },
+  { key: 'drawing_type', label: '種別' },
+  { key: 'necessity', label: '必要性' },
+  { key: 'required_lod', label: '必要LOD' },
+  { key: 'current_lod', label: '現在LOD' },
+  { key: 'lod_judgement', label: 'LOD判定' },
+  { key: 'status', label: 'ステータス' },
+  { key: 'lock_status', label: 'ロック状態' },
+  { key: 'final_deadline', label: '期限' },
+  { key: 'has_change_alert', label: '影響警告' },
+  { key: 'next_action', label: '次アクション' },
+]
 
 interface DrawingListViewProps {
   drawings: Drawing[]
   onOpenDetail: (drawingId: string) => void
   onStatusChange?: (drawingId: string, status: string) => void
+  statusOptions?: string[]
+  sortKey?: DrawingSortKey | null
+  sortDirection?: SortDirection
+  onSortChange?: (key: DrawingSortKey) => void
 }
 
-function DrawingListView({ drawings, onOpenDetail, onStatusChange }: DrawingListViewProps) {
+function DrawingListView({
+  drawings,
+  onOpenDetail,
+  onStatusChange,
+  statusOptions = [],
+  sortKey,
+  sortDirection,
+  onSortChange,
+}: DrawingListViewProps) {
   return (
     <table className="drawing-table">
       <thead>
         <tr>
-          <th>図面番号</th>
-          <th>図面名称</th>
-          <th>種別</th>
-          <th>必要性</th>
-          <th>必要LOD</th>
-          <th>現在LOD</th>
-          <th>LOD判定</th>
-          <th>ステータス</th>
-          <th>ロック状態</th>
-          <th>期限</th>
-          <th>影響警告</th>
-          <th>次アクション</th>
+          {COLUMNS.map((column) => (
+            <th key={column.key}>
+              {onSortChange ? (
+                <button
+                  type="button"
+                  className="th-sort-button"
+                  onClick={() => onSortChange(column.key)}
+                >
+                  {column.label}
+                  {sortKey === column.key && (
+                    <span className="th-sort-arrow">{sortDirection === 'desc' ? ' ▼' : ' ▲'}</span>
+                  )}
+                </button>
+              ) : (
+                column.label
+              )}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -56,10 +104,10 @@ function DrawingListView({ drawings, onOpenDetail, onStatusChange }: DrawingList
                     value={drawing.status}
                     onChange={(e) => onStatusChange(drawing.drawing_id, e.target.value)}
                   >
-                    {!DRAWING_STATUS_OPTIONS.includes(drawing.status as never) && (
+                    {!statusOptions.includes(drawing.status) && (
                       <option value={drawing.status}>{drawing.status}</option>
                     )}
-                    {DRAWING_STATUS_OPTIONS.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>

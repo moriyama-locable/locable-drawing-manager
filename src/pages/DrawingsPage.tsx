@@ -5,18 +5,27 @@ import {
   archiveProject,
   exportProject,
   fetchDrawings,
+  fetchDrawingTypes,
   fetchPhases,
   fetchProjects,
+  fetchStatusMaster,
   importDrawings,
   updateDrawing,
   updateProject,
 } from '../api/client'
 import ProjectList from '../components/ProjectList'
-import DrawingListView from '../components/DrawingListView'
+import DrawingListView, { type DrawingSortKey, type SortDirection } from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
-import { DRAWING_STATUS_PROGRESS, type Drawing, type LodJudgement, type Phase, type Project } from '../types'
+import {
+  type Drawing,
+  type DrawingTypeOption,
+  type LodJudgement,
+  type Phase,
+  type Project,
+  type StatusMasterItem,
+} from '../types'
 import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
 
 const LOD_FILTER_OPTIONS: Array<LodJudgement | 'all'> = ['all', '不足', 'OK', '過剰', '不要']
@@ -26,6 +35,17 @@ const LOD_FILTER_LABELS: Record<LodJudgement | 'all', string> = {
   OK: 'OK',
   過剰: '過剰',
   不要: '不要（対応不要）',
+}
+
+const NECESSITY_FILTER_OPTIONS = ['all', '必須', '任意', '不要'] as const
+type NecessityFilter = (typeof NECESSITY_FILTER_OPTIONS)[number]
+
+function compareDrawingValues(a: unknown, b: unknown): number {
+  if (a == null && b == null) return 0
+  if (a == null) return -1
+  if (b == null) return 1
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  return String(a).localeCompare(String(b), 'ja')
 }
 
 type ViewMode = 'list' | 'card'
@@ -56,6 +76,13 @@ function DrawingsPage() {
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [lifecycleBusy, setLifecycleBusy] = useState(false)
   const [lodFilter, setLodFilter] = useState<LodJudgement | 'all'>('all')
+  const [necessityFilter, setNecessityFilter] = useState<NecessityFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [drawingTypeOptions, setDrawingTypeOptions] = useState<DrawingTypeOption[]>([])
+  const [statusMasterItems, setStatusMasterItems] = useState<StatusMasterItem[]>([])
+  const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [importBusy, setImportBusy] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,6 +112,12 @@ function DrawingsPage() {
     })
     fetchPhases()
       .then((data) => setPhases(data.phases))
+      .catch((err: Error) => setError(err.message))
+    fetchDrawingTypes()
+      .then((data) => setDrawingTypeOptions(data.drawing_types))
+      .catch((err: Error) => setError(err.message))
+    fetchStatusMaster('drawing')
+      .then((data) => setStatusMasterItems(data.status_master))
       .catch((err: Error) => setError(err.message))
   }, [])
 
@@ -116,6 +149,16 @@ function DrawingsPage() {
     )
   }, [phases, selectedProject])
 
+  const typeFilterOptions = useMemo(
+    () => drawingTypeOptions.map((opt) => opt.drawing_type),
+    [drawingTypeOptions]
+  )
+
+  const statusFilterOptions = useMemo(
+    () => statusMasterItems.map((item) => item.status_name),
+    [statusMasterItems]
+  )
+
   const filteredDrawings = useMemo(() => {
     let result = drawings
     if (focus === 'lod_shortage') {
@@ -129,20 +172,48 @@ function DrawingsPage() {
     if (lodFilter !== 'all') {
       result = result.filter((drawing) => drawing.lod_judgement === lodFilter)
     }
-    if (!searchText) return result
-    const keyword = searchText.toLowerCase()
-    return result.filter(
-      (drawing) =>
-        drawing.drawing_no.toLowerCase().includes(keyword) ||
-        drawing.drawing_name.toLowerCase().includes(keyword)
-    )
-  }, [drawings, searchText, focus, lodFilter])
+    if (necessityFilter !== 'all') {
+      result = result.filter((drawing) => drawing.necessity === necessityFilter)
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter((drawing) => drawing.status === statusFilter)
+    }
+    if (typeFilter !== 'all') {
+      result = result.filter((drawing) => drawing.drawing_type === typeFilter)
+    }
+    if (searchText) {
+      const keyword = searchText.toLowerCase()
+      result = result.filter(
+        (drawing) =>
+          drawing.drawing_no.toLowerCase().includes(keyword) ||
+          drawing.drawing_name.toLowerCase().includes(keyword)
+      )
+    }
+    return result
+  }, [drawings, searchText, focus, lodFilter, necessityFilter, statusFilter, typeFilter])
+
+  const sortedDrawings = useMemo(() => {
+    if (!sortKey) return filteredDrawings
+    const sorted = [...filteredDrawings].sort((a, b) => compareDrawingValues(a[sortKey], b[sortKey]))
+    if (sortDirection === 'desc') sorted.reverse()
+    return sorted
+  }, [filteredDrawings, sortKey, sortDirection])
+
+  function handleSortChange(key: DrawingSortKey) {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDirection('asc')
+    }
+  }
 
   const progressStats = useMemo(() => {
+    const progressByStatus = new Map(statusMasterItems.map((item) => [item.status_name, item.progress_percent ?? 0]))
     const needed = drawings.filter((d) => d.necessity !== '不要')
     const notNeeded = drawings.length - needed.length
     const approved = needed.filter((d) => d.status === '承認済').length
-    const progressSum = needed.reduce((sum, d) => sum + (DRAWING_STATUS_PROGRESS[d.status] ?? 0), 0)
+    const progressSum = needed.reduce((sum, d) => sum + (progressByStatus.get(d.status) ?? 0), 0)
     const percent = needed.length > 0 ? Math.round(progressSum / needed.length) : 0
     const statusCounts = new Map<string, number>()
     for (const d of needed) {
@@ -161,7 +232,7 @@ function DrawingsPage() {
       statusCounts: Array.from(statusCounts.entries()),
       currentLodCounts: Array.from(currentLodCounts.entries()).sort((a, b) => a[0] - b[0]),
     }
-  }, [drawings])
+  }, [drawings, statusMasterItems])
 
   async function handleStatusChange(drawingId: string, status: string) {
     setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
@@ -314,9 +385,7 @@ function DrawingsPage() {
             onSelect={setSelectedProjectId}
             onCreated={handleProjectCreated}
           />
-        </aside>
 
-        <section className="drawings-right-pane">
           {selectedProject && (
             <div className="settings-actions">
               <span>状態: {selectedProject.project_status}</span>
@@ -389,7 +458,9 @@ function DrawingsPage() {
               </div>
             </div>
           )}
+        </aside>
 
+        <section className="drawings-right-pane">
           {selectedProjectId && (
             <DrawingCreateForm
               projectId={selectedProjectId}
@@ -432,6 +503,42 @@ function DrawingsPage() {
                 ))}
               </select>
             </label>
+            <label className="lod-filter-select">
+              必要性
+              <select
+                value={necessityFilter}
+                onChange={(e) => setNecessityFilter(e.target.value as NecessityFilter)}
+              >
+                <option value="all">すべて</option>
+                {NECESSITY_FILTER_OPTIONS.filter((opt) => opt !== 'all').map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="lod-filter-select">
+              ステータス
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">すべて</option>
+                {statusFilterOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="lod-filter-select">
+              種別
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="all">すべて</option>
+                {typeFilterOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="view-toggle">
               <button
                 type="button"
@@ -450,16 +557,20 @@ function DrawingsPage() {
             </div>
           </div>
 
-          {filteredDrawings.length === 0 ? (
+          {sortedDrawings.length === 0 ? (
             <p className="empty-hint">図面がありません。</p>
           ) : viewMode === 'list' ? (
             <DrawingListView
-              drawings={filteredDrawings}
+              drawings={sortedDrawings}
               onOpenDetail={setSelectedDrawingId}
               onStatusChange={handleStatusChange}
+              statusOptions={statusFilterOptions}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSortChange={handleSortChange}
             />
           ) : (
-            <DrawingCardView drawings={filteredDrawings} onOpenDetail={setSelectedDrawingId} />
+            <DrawingCardView drawings={sortedDrawings} onOpenDetail={setSelectedDrawingId} />
           )}
         </section>
       </div>

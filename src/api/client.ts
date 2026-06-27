@@ -1,4 +1,13 @@
-import type { ChangeItem, Drawing, LodRule, Phase, Project } from '../types'
+import type {
+  ChangeItem,
+  Drawing,
+  DrawingTypeOption,
+  LodRule,
+  Phase,
+  Project,
+  StatusMasterGroup,
+  StatusMasterItem,
+} from '../types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -139,6 +148,53 @@ export function saveLodRules(rules: LodRule[]): Promise<unknown> {
   return request('/api/settings/lod-rules', {
     method: 'PUT',
     body: JSON.stringify({ lod_rules: rules }),
+  })
+}
+
+export function fetchDrawingTypes(): Promise<{ drawing_types: DrawingTypeOption[] }> {
+  return request('/api/settings/drawing-types')
+}
+
+export interface DrawingTypeInput {
+  drawing_type: string
+  original_drawing_type?: string
+  sort_order?: number
+}
+
+export function saveDrawingTypes(items: DrawingTypeInput[]): Promise<unknown> {
+  return request('/api/settings/drawing-types', {
+    method: 'PUT',
+    body: JSON.stringify({ drawing_types: items }),
+  })
+}
+
+export function deleteDrawingType(drawingType: string): Promise<void> {
+  return request(`/api/settings/drawing-types?drawing_type=${encodeURIComponent(drawingType)}`, {
+    method: 'DELETE',
+  })
+}
+
+export function fetchStatusMaster(group: StatusMasterGroup): Promise<{ status_master: StatusMasterItem[] }> {
+  return request(`/api/settings/status-master?group=${group}`)
+}
+
+export interface StatusMasterInput {
+  status_id?: string
+  status_name: string
+  sort_order?: number
+  progress_percent?: number
+}
+
+export function saveStatusMaster(group: StatusMasterGroup, items: StatusMasterInput[]): Promise<unknown> {
+  return request('/api/settings/status-master', {
+    method: 'PUT',
+    body: JSON.stringify({ status_group: group, items }),
+  })
+}
+
+export function deleteStatusMasterItem(statusId: string): Promise<void> {
+  return request(`/api/settings/status-master?status_id=${encodeURIComponent(statusId)}`, {
+    method: 'DELETE',
   })
 }
 

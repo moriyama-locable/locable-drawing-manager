@@ -109,7 +109,7 @@ body {
 }
 
 .drawings-left-pane {
-  width: 220px;
+  width: 320px;
   flex-shrink: 0;
   background: var(--color-white);
   border: 1px solid var(--color-border);
@@ -192,6 +192,7 @@ body {
 
 .drawings-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
@@ -245,6 +246,22 @@ body {
   background: var(--color-bg);
   font-weight: 500;
   color: var(--color-primary);
+}
+
+.th-sort-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.th-sort-arrow {
+  font-size: 10px;
 }
 
 .link-button {
@@ -444,6 +461,8 @@ body {
 
 .settings-actions {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   margin-top: 12px;
 }
