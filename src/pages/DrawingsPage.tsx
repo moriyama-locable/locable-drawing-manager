@@ -4,6 +4,7 @@ import ProjectList from '../components/ProjectList'
 import DrawingListView from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
+import DrawingCreateForm from '../components/DrawingCreateForm'
 import type { Drawing, Project } from '../types'
 
 type ViewMode = 'list' | 'card'
@@ -17,15 +18,30 @@ function DrawingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchProjects()
+  function loadProjects() {
+    return fetchProjects()
       .then((data) => {
         setProjects(data.projects)
-        if (data.projects.length > 0) {
-          setSelectedProjectId(data.projects[0].project_id)
-        }
+        return data.projects
       })
+      .catch((err: Error) => {
+        setError(err.message)
+        return []
+      })
+  }
+
+  function loadDrawings(projectId: string) {
+    return fetchDrawings(projectId)
+      .then((data) => setDrawings(data.drawings))
       .catch((err: Error) => setError(err.message))
+  }
+
+  useEffect(() => {
+    loadProjects().then((loaded) => {
+      if (loaded.length > 0) {
+        setSelectedProjectId(loaded[0].project_id)
+      }
+    })
   }, [])
 
   useEffect(() => {
@@ -33,10 +49,12 @@ function DrawingsPage() {
       setDrawings([])
       return
     }
-    fetchDrawings(selectedProjectId)
-      .then((data) => setDrawings(data.drawings))
-      .catch((err: Error) => setError(err.message))
+    loadDrawings(selectedProjectId)
   }, [selectedProjectId])
+
+  function handleProjectCreated(projectId: string) {
+    loadProjects().then(() => setSelectedProjectId(projectId))
+  }
 
   const filteredDrawings = useMemo(() => {
     if (!searchText) return drawings
@@ -59,10 +77,18 @@ function DrawingsPage() {
             projects={projects}
             selectedProjectId={selectedProjectId}
             onSelect={setSelectedProjectId}
+            onCreated={handleProjectCreated}
           />
         </aside>
 
         <section className="drawings-right-pane">
+          {selectedProjectId && (
+            <DrawingCreateForm
+              projectId={selectedProjectId}
+              onCreated={() => loadDrawings(selectedProjectId)}
+            />
+          )}
+
           <div className="drawings-toolbar">
             <input
               type="search"
