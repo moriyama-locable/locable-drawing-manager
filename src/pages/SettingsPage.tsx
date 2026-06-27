@@ -11,6 +11,14 @@ import {
 } from '../api/client'
 import type { DrawingTypeOption, LodRule, StatusMasterItem } from '../types'
 
+function HelpIcon({ text }: { text: string }) {
+  return (
+    <span className="help-icon" tabIndex={0} title={text} aria-label={text}>
+      ?
+    </span>
+  )
+}
+
 interface DrawingTypeRow {
   drawing_type: string
   original_drawing_type?: string
@@ -96,7 +104,10 @@ function DrawingTypePanel() {
 
   return (
     <section>
-      <h2>図面種別管理</h2>
+      <h2>
+        図面種別管理
+        <HelpIcon text="図面の種類（例：平面図、設備図など）を登録・管理します。並び順は一覧表示時の順序に使われます。" />
+      </h2>
       {error && <p className="error-text">{error}</p>}
       <table className="drawing-table">
         <thead>
@@ -212,7 +223,16 @@ function StatusMasterPanel({
 
   return (
     <section>
-      <h2>{title}</h2>
+      <h2>
+        {title}
+        <HelpIcon
+          text={
+            showProgress
+              ? '図面の進行状態（例：作成中、承認済など）を登録します。進捗(%)は全体進捗バーの算出に使われます。'
+              : '図面のロック状態（編集可否）の選択肢を登録・管理します。'
+          }
+        />
+      </h2>
       {error && <p className="error-text">{error}</p>}
       <table className="drawing-table">
         <thead>
@@ -273,7 +293,7 @@ function StatusMasterPanel({
   )
 }
 
-function SettingsPage() {
+function LodRulesPanel() {
   const [rules, setRules] = useState<LodRule[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -311,9 +331,11 @@ function SettingsPage() {
   }
 
   return (
-    <div className="page">
-      <h1>設定</h1>
-      <p>フェーズ × 図面種別ごとの必要LODを管理します。</p>
+    <section>
+      <h2>
+        LODルール
+        <HelpIcon text="フェーズ×図面種別ごとに必要なLOD（詳細度）と必要性を設定します。フェーズ進行時にこのルールに基づいて図面の必要LODが再評価されます。" />
+      </h2>
       {error && <p className="error-text">{error}</p>}
 
       <div className="settings-actions">
@@ -384,10 +406,53 @@ function SettingsPage() {
           {saving ? '保存中...' : '保存'}
         </button>
       </div>
+    </section>
+  )
+}
 
-      <DrawingTypePanel />
-      <StatusMasterPanel group="drawing" title="図面ステータス管理" showProgress />
-      <StatusMasterPanel group="lock" title="ロック状態管理" showProgress={false} />
+type SettingsSectionId = 'lod_rules' | 'drawing_types' | 'drawing_status' | 'lock_status'
+
+const SETTINGS_SECTIONS: Array<{ id: SettingsSectionId; label: string; help: string }> = [
+  { id: 'lod_rules', label: 'LODルール', help: 'フェーズ×図面種別ごとの必要LODを設定します。' },
+  { id: 'drawing_types', label: '図面種別管理', help: '図面の種類の登録・管理を行います。' },
+  { id: 'drawing_status', label: '図面ステータス管理', help: '図面の進行状態の選択肢を管理します。' },
+  { id: 'lock_status', label: 'ロック状態管理', help: '図面のロック状態の選択肢を管理します。' },
+]
+
+function SettingsPage() {
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>('lod_rules')
+
+  return (
+    <div className="page">
+      <h1>設定</h1>
+      <div className="settings-layout">
+        <nav className="settings-nav">
+          <ul className="settings-nav-list">
+            {SETTINGS_SECTIONS.map((section) => (
+              <li key={section.id}>
+                <button
+                  type="button"
+                  className={section.id === activeSection ? 'settings-nav-item active' : 'settings-nav-item'}
+                  onClick={() => setActiveSection(section.id)}
+                >
+                  <span>{section.label}</span>
+                  <HelpIcon text={section.help} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="settings-detail">
+          {activeSection === 'lod_rules' && <LodRulesPanel />}
+          {activeSection === 'drawing_types' && <DrawingTypePanel />}
+          {activeSection === 'drawing_status' && (
+            <StatusMasterPanel group="drawing" title="図面ステータス管理" showProgress />
+          )}
+          {activeSection === 'lock_status' && (
+            <StatusMasterPanel group="lock" title="ロック状態管理" showProgress={false} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

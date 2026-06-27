@@ -80,6 +80,16 @@ export function advanceProjectPhase(projectId: string): Promise<AdvancePhaseResu
   return request(`/api/projects/${projectId}/advance-phase`, { method: 'POST' })
 }
 
+export interface RevertPhaseResult {
+  project_id: string
+  phase_code: string
+  updated_drawings: number
+}
+
+export function revertProjectPhase(projectId: string): Promise<RevertPhaseResult> {
+  return request(`/api/projects/${projectId}/revert-phase`, { method: 'POST' })
+}
+
 export function fetchDrawings(projectId: string): Promise<{ drawings: Drawing[] }> {
   return request(`/api/projects/${projectId}/drawings`)
 }

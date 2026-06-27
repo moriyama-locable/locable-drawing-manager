@@ -10,6 +10,7 @@ import {
   fetchProjects,
   fetchStatusMaster,
   importDrawings,
+  revertProjectPhase,
   updateDrawing,
   updateProject,
 } from '../api/client'
@@ -146,6 +147,17 @@ function DrawingsPage() {
       phases
         .filter((phase) => (phase.sort_order ?? 0) > (current.sort_order ?? 0))
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0] ?? null
+    )
+  }, [phases, selectedProject])
+
+  const prevPhase = useMemo(() => {
+    if (!selectedProject) return null
+    const current = phases.find((phase) => phase.phase_code === selectedProject.current_phase)
+    if (!current) return null
+    return (
+      phases
+        .filter((phase) => (phase.sort_order ?? 0) < (current.sort_order ?? 0))
+        .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0))[0] ?? null
     )
   }, [phases, selectedProject])
 
@@ -316,6 +328,24 @@ function DrawingsPage() {
     }
   }
 
+  async function handleRevertPhase() {
+    if (!selectedProjectId || !prevPhase) return
+    if (!window.confirm(`「${prevPhase.phase_name}」へ戻します。既存の図面の必要LODを再評価します。よろしいですか？`)) {
+      return
+    }
+    setLifecycleBusy(true)
+    setError(null)
+    try {
+      const result = await revertProjectPhase(selectedProjectId)
+      await Promise.all([loadProjects(), loadDrawings(selectedProjectId)])
+      setNotice(`「${prevPhase.phase_name}」へ戻しました。図面を${result.updated_drawings}件更新しました。`)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
   async function handleMarkCompleted() {
     if (!selectedProjectId) return
     setLifecycleBusy(true)
@@ -324,6 +354,42 @@ function DrawingsPage() {
       await updateProject(selectedProjectId, { project_status: 'completed' })
       await loadProjects()
       setNotice('プロジェクトを完了にしました。続けて書き出しを行ってください。')
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
+  async function handleRevertToActive() {
+    if (!selectedProjectId) return
+    if (!window.confirm('プロジェクトを進行中に戻します。よろしいですか？')) {
+      return
+    }
+    setLifecycleBusy(true)
+    setError(null)
+    try {
+      await updateProject(selectedProjectId, { project_status: 'active' })
+      await loadProjects()
+      setNotice('プロジェクトを進行中に戻しました。')
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
+  async function handleUnarchive() {
+    if (!selectedProjectId) return
+    if (!window.confirm('アーカイブを取り消し、完了状態に戻します。よろしいですか？')) {
+      return
+    }
+    setLifecycleBusy(true)
+    setError(null)
+    try {
+      await updateProject(selectedProjectId, { project_status: 'completed' })
+      await loadProjects()
+      setNotice('アーカイブを取り消し、完了状態に戻しました。')
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -399,9 +465,19 @@ function DrawingsPage() {
                   次のフェーズへ進む（{nextPhase.phase_name}）
                 </button>
               )}
+              {selectedProject.project_status === 'active' && prevPhase && (
+                <button type="button" disabled={lifecycleBusy} onClick={handleRevertPhase}>
+                  前のフェーズへ戻る（{prevPhase.phase_name}）
+                </button>
+              )}
               {selectedProject.project_status === 'active' && (
                 <button type="button" disabled={lifecycleBusy} onClick={handleMarkCompleted}>
                   完了にする
+                </button>
+              )}
+              {selectedProject.project_status === 'completed' && (
+                <button type="button" disabled={lifecycleBusy} onClick={handleRevertToActive}>
+                  進行中に戻す
                 </button>
               )}
               {selectedProject.project_status === 'completed' && (
@@ -412,6 +488,11 @@ function DrawingsPage() {
               {selectedProject.project_status === 'completed' && selectedProject.exported_at && (
                 <button type="button" disabled={lifecycleBusy} onClick={handleArchive}>
                   アーカイブする
+                </button>
+              )}
+              {selectedProject.project_status === 'archived' && (
+                <button type="button" disabled={lifecycleBusy} onClick={handleUnarchive}>
+                  アーカイブを取り消す
                 </button>
               )}
             </div>
