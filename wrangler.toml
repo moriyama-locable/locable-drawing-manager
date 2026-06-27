@@ -5,10 +5,10 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "locable_drawing_manager_dev"
-database_id = "REPLACE_WITH_DEV_DATABASE_ID"
+database_id = "c59644d8-1a0c-4bbc-84b8-5feee921dca8"
 
 [env.production]
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "locable_drawing_manager_prod"
-database_id = "REPLACE_WITH_PROD_DATABASE_ID"
+database_id = "d907012a-6990-47ba-ba8f-839b1ef2ef6f"
