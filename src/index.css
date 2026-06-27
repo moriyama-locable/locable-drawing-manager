@@ -192,6 +192,7 @@ body {
 
 .drawings-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
@@ -245,6 +246,22 @@ body {
   background: var(--color-bg);
   font-weight: 500;
   color: var(--color-primary);
+}
+
+.th-sort-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.th-sort-arrow {
+  font-size: 10px;
 }
 
 .link-button {
