@@ -84,3 +84,384 @@ body {
   font-size: 14px;
   color: var(--color-text);
 }
+
+.error-text {
+  color: var(--color-accent);
+  font-size: 14px;
+}
+
+.empty-hint {
+  color: #9a9da6;
+  font-size: 14px;
+}
+
+/* Drawings page layout */
+.drawings-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.drawings-left-pane {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.drawings-right-pane {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.project-list button:hover {
+  background: var(--color-bg);
+}
+
+.project-list button.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.project-phase {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.drawings-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.drawings-toolbar input[type='search'] {
+  flex: 1;
+  max-width: 320px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.view-toggle button {
+  border: none;
+  background: var(--color-white);
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.drawing-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-white);
+  font-size: 13px;
+}
+
+.drawing-table th,
+.drawing-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.drawing-table th {
+  background: var(--color-bg);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+
+.alert-tag {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.lod-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.lod-shortage {
+  background: rgba(242, 101, 34, 0.15);
+  color: var(--color-accent);
+}
+
+.lod-ok {
+  background: rgba(21, 32, 66, 0.1);
+  color: var(--color-primary);
+}
+
+.lod-excess {
+  background: #f0f0f0;
+  color: #6b6b6b;
+}
+
+.lod-na {
+  background: #f0f0f0;
+  color: #aaaaaa;
+}
+
+.drawing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.drawing-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawing-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawing-card-no {
+  font-size: 12px;
+  color: #9a9da6;
+}
+
+.drawing-card-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.drawing-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+/* Detail modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(21, 32, 66, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-panel {
+  background: var(--color-white);
+  border-radius: 6px;
+  max-width: 560px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.modal-panel h2 {
+  font-size: 18px;
+  color: var(--color-primary);
+  margin: 0 0 12px;
+}
+
+.modal-panel h3 {
+  font-size: 14px;
+  color: var(--color-primary);
+  margin: 16px 0 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.detail-grid dt {
+  color: #9a9da6;
+}
+
+.detail-grid dd {
+  margin: 0;
+}
+
+.related-change-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.related-change-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+/* Settings page */
+.drawing-table input,
+.drawing-table select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-actions button,
+.change-form button,
+.changes-project-select select {
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-white);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.settings-actions button:last-child,
+.change-form button {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+/* Changes page */
+.changes-project-select {
+  margin-bottom: 16px;
+}
+
+.changes-project-select select {
+  margin-left: 8px;
+}
+
+.change-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.change-form input,
+.change-form select {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* Dashboard page */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
+.dashboard-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-card.alert .dashboard-card-value {
+  color: var(--color-accent);
+}
+
+.dashboard-card-label {
+  font-size: 12px;
+  color: #9a9da6;
+}
+
+.dashboard-card-value {
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--color-primary);
+}

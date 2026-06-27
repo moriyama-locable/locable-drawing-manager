@@ -1,6 +1,5 @@
-interface Env {
-  DB: D1Database
-}
+import type { Env } from './_lib/types'
+import { generateId, jsonError, nowIso } from './_lib/http'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { results } = await context.env.DB.prepare(
@@ -11,4 +10,37 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   ).all()
 
   return Response.json({ projects: results })
+}
+
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const body = await context.request.json<{
+    project_name?: string
+    current_phase?: string
+    project_status?: string
+    sort_order?: number
+  }>()
+
+  if (!body.project_name || !body.current_phase) {
+    return jsonError('project_name and current_phase are required', 'INVALID_BODY')
+  }
+
+  const projectId = generateId('PRJ')
+  const now = nowIso()
+
+  await context.env.DB.prepare(
+    `INSERT INTO projects (project_id, project_name, current_phase, project_status, sort_order, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      projectId,
+      body.project_name,
+      body.current_phase,
+      body.project_status ?? 'active',
+      body.sort_order ?? null,
+      now,
+      now
+    )
+    .run()
+
+  return Response.json({ project_id: projectId }, { status: 201 })
 }
