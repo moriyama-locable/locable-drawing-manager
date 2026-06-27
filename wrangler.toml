@@ -1,0 +1,14 @@
+name = "locable-drawing-manager"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "locable_drawing_manager_dev"
+database_id = "REPLACE_WITH_DEV_DATABASE_ID"
+
+[env.production]
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "locable_drawing_manager_prod"
+database_id = "REPLACE_WITH_PROD_DATABASE_ID"

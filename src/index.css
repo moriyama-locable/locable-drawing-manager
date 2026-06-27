@@ -1,0 +1,86 @@
+:root {
+  --color-primary: #152042;
+  --color-accent: #f26522;
+  --color-white: #ffffff;
+  --color-text: #2c2f38;
+  --color-border: #e3e5ea;
+  --color-bg: #f7f8fa;
+
+  font-family: 'Noto Sans JP', 'Source Sans Pro', system-ui, sans-serif;
+  font-weight: 300;
+  color: var(--color-text);
+  background: var(--color-bg);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 24px;
+  height: 56px;
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.app-title {
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.app-nav {
+  display: flex;
+  gap: 20px;
+}
+
+.app-nav a {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav a.active {
+  color: var(--color-white);
+  border-bottom-color: var(--color-accent);
+}
+
+.app-nav a:hover {
+  color: var(--color-white);
+}
+
+.app-main {
+  flex: 1;
+  padding: 24px;
+}
+
+.page h1 {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+}
+
+.page p {
+  font-size: 14px;
+  color: var(--color-text);
+}
