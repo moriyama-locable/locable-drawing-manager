@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/types'
-import { generateId, jsonError, nowIso } from '../_lib/http'
+import { generateId, jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { results } = await context.env.DB.prepare(
@@ -45,6 +45,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     })
 
     await context.env.DB.batch(statements)
+    await writeAuditLog(context.env.DB, {
+      entityType: 'lod_rules',
+      entityId: 'bulk',
+      action: 'update',
+      after: { count: statements.length },
+    })
     return Response.json({ updated: statements.length })
   } catch {
     return jsonError('Invalid lod_rules payload', 'INVALID_BODY')

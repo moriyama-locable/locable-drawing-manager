@@ -1,12 +1,22 @@
 import type { Env } from './_lib/types'
-import { generateId, jsonError, nowIso } from './_lib/http'
+import { generateId, jsonError, nowIso, writeAuditLog } from './_lib/http'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
-  const { results } = await context.env.DB.prepare(
-    `SELECT project_id, project_name, current_phase, project_status, sort_order
-     FROM projects
-     WHERE deleted_at IS NULL
-     ORDER BY sort_order ASC`
+  const statusParam = new URL(context.request.url).searchParams.get('status')
+
+  const { results } = await (statusParam === 'archived'
+    ? context.env.DB.prepare(
+        `SELECT project_id, project_name, current_phase, project_status, sort_order, archived_at, exported_at, export_file_url
+         FROM projects
+         WHERE deleted_at IS NULL AND project_status = 'archived'
+         ORDER BY archived_at DESC`
+      )
+    : context.env.DB.prepare(
+        `SELECT project_id, project_name, current_phase, project_status, sort_order, exported_at, export_file_url
+         FROM projects
+         WHERE deleted_at IS NULL AND project_status != 'archived'
+         ORDER BY sort_order ASC`
+      )
   ).all()
 
   return Response.json({ projects: results })
@@ -41,6 +51,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       now
     )
     .run()
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'project',
+    entityId: projectId,
+    action: 'create',
+    after: body,
+  })
 
   return Response.json({ project_id: projectId }, { status: 201 })
 }

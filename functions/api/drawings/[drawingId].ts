@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/types'
-import { jsonError, nowIso } from '../_lib/http'
+import { jsonError, nowIso, writeAuditLog } from '../_lib/http'
 import { judgeLod, nextActionForLod } from '../_lib/lod'
 
 interface DrawingRow {
@@ -93,6 +93,14 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   )
     .bind(...values, nowIso(), drawingId)
     .run()
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'drawing',
+    entityId: drawingId,
+    action: 'update',
+    before: existing,
+    after: body,
+  })
 
   return Response.json({ drawing_id: drawingId, lod_judgement: judgement })
 }

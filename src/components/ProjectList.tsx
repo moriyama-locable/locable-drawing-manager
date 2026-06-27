@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { createProject } from '../api/client'
+import { useEffect, useState } from 'react'
+import { createProject, fetchProjects } from '../api/client'
 import type { Project } from '../types'
 
 interface ProjectListProps {
@@ -13,6 +13,15 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
   const [projectName, setProjectName] = useState('')
   const [currentPhase, setCurrentPhase] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'active' | 'archived'>('active')
+  const [archivedProjects, setArchivedProjects] = useState<Project[]>([])
+
+  useEffect(() => {
+    if (tab !== 'archived') return
+    fetchProjects('archived')
+      .then((data) => setArchivedProjects(data.projects))
+      .catch((err: Error) => setError(err.message))
+  }, [tab])
 
   async function handleCreate() {
     if (!projectName || !currentPhase) return
@@ -30,13 +39,26 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
     }
   }
 
+  const visibleProjects = tab === 'active' ? projects : archivedProjects
+
   return (
     <div>
-      {projects.length === 0 ? (
-        <p className="empty-hint">プロジェクトがありません。</p>
+      <div className="view-toggle">
+        <button type="button" className={tab === 'active' ? 'active' : ''} onClick={() => setTab('active')}>
+          進行中
+        </button>
+        <button type="button" className={tab === 'archived' ? 'active' : ''} onClick={() => setTab('archived')}>
+          アーカイブ
+        </button>
+      </div>
+
+      {visibleProjects.length === 0 ? (
+        <p className="empty-hint">
+          {tab === 'active' ? 'プロジェクトがありません。' : 'アーカイブ済みプロジェクトはありません。'}
+        </p>
       ) : (
         <ul className="project-list">
-          {projects.map((project) => (
+          {visibleProjects.map((project) => (
             <li key={project.project_id}>
               <button
                 type="button"
@@ -51,22 +73,24 @@ function ProjectList({ projects, selectedProjectId, onSelect, onCreated }: Proje
         </ul>
       )}
 
-      <div className="project-create-form">
-        <input
-          placeholder="プロジェクト名"
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-        />
-        <input
-          placeholder="フェーズ"
-          value={currentPhase}
-          onChange={(e) => setCurrentPhase(e.target.value)}
-        />
-        <button type="button" onClick={handleCreate}>
-          + プロジェクトを追加
-        </button>
-        {error && <p className="error-text">{error}</p>}
-      </div>
+      {tab === 'active' && (
+        <div className="project-create-form">
+          <input
+            placeholder="プロジェクト名"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+          />
+          <input
+            placeholder="フェーズ"
+            value={currentPhase}
+            onChange={(e) => setCurrentPhase(e.target.value)}
+          />
+          <button type="button" onClick={handleCreate}>
+            + プロジェクトを追加
+          </button>
+          {error && <p className="error-text">{error}</p>}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import type { Env } from '../../_lib/types'
-import { generateId, jsonError, nowIso } from '../../_lib/http'
+import { generateId, jsonError, nowIso, writeAuditLog } from '../../_lib/http'
 import { judgeLod, nextActionForLod } from '../../_lib/lod'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -83,6 +83,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       now
     )
     .run()
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'drawing',
+    entityId: drawingId,
+    action: 'create',
+    after: { project_id: projectId, ...body },
+  })
 
   return Response.json({ drawing_id: drawingId }, { status: 201 })
 }

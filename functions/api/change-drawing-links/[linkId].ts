@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/types'
-import { jsonError, nowIso } from '../_lib/http'
+import { jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const linkId = context.params.linkId as string
@@ -39,6 +39,13 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     .bind(remainingAlerts.length > 0 ? 1 : 0, now, link.drawing_id)
     .run()
 
+  await writeAuditLog(context.env.DB, {
+    entityType: 'change_drawing_link',
+    entityId: linkId,
+    action: 'update',
+    after: { sync_status: body.sync_status },
+  })
+
   return Response.json({ link_id: linkId })
 }
 
@@ -70,6 +77,12 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
   )
     .bind(remainingAlerts.length > 0 ? 1 : 0, nowIso(), link.drawing_id)
     .run()
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'change_drawing_link',
+    entityId: linkId,
+    action: 'delete',
+  })
 
   return new Response(null, { status: 204 })
 }
