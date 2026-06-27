@@ -459,6 +459,81 @@ body {
   font-size: 13px;
 }
 
+/* Settings page layout */
+.settings-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.settings-nav {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.settings-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-nav-item:hover {
+  background: #f0f1f4;
+}
+
+.settings-nav-item.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.settings-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  line-height: 1;
+  color: #6b6f76;
+  cursor: help;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.settings-detail h2 .help-icon {
+  vertical-align: middle;
+}
+
 .settings-actions {
   display: flex;
   flex-direction: column;
