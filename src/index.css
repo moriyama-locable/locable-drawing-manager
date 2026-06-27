@@ -486,6 +486,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.dashboard-card:hover {
+  border-color: var(--color-accent);
 }
 
 .dashboard-card.alert .dashboard-card-value {

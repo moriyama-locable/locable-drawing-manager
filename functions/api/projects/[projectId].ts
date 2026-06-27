@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/types'
-import { jsonError, nowIso } from '../_lib/http'
+import { jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
 const PATCHABLE_FIELDS = ['project_name', 'current_phase', 'project_status', 'sort_order'] as const
 
@@ -24,6 +24,13 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   if (result.meta.changes === 0) {
     return jsonError('Project not found', 'NOT_FOUND', 404)
   }
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'project',
+    entityId: projectId,
+    action: 'update',
+    after: body,
+  })
 
   return Response.json({ project_id: projectId })
 }

@@ -13,8 +13,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export function fetchProjects(): Promise<{ projects: Project[] }> {
-  return request('/api/projects')
+export function fetchProjects(status?: 'archived'): Promise<{ projects: Project[] }> {
+  return request(status ? `/api/projects?status=${status}` : '/api/projects')
+}
+
+export function updateProject(projectId: string, patch: Partial<Project>): Promise<unknown> {
+  return request(`/api/projects/${projectId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
+export interface ExportResult {
+  export_id: string
+  project_overview_md: string
+  drawings_csv: string
+  changes_csv: string
+  change_drawing_links_csv: string
+  lod_status_csv: string
+  drive_links_csv: string
+}
+
+export function exportProject(projectId: string): Promise<ExportResult> {
+  return request(`/api/projects/${projectId}/export`, { method: 'POST' })
+}
+
+export function archiveProject(projectId: string): Promise<{ project_id: string; project_status: string }> {
+  return request(`/api/projects/${projectId}/archive`, { method: 'PATCH' })
 }
 
 export interface CreateProjectInput {
@@ -109,6 +134,24 @@ export function addChangeDrawingLink(
   })
 }
 
+export function updateChangeDrawingLink(linkId: string, syncStatus: string): Promise<{ link_id: string }> {
+  return request(`/api/change-drawing-links/${linkId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ sync_status: syncStatus }),
+  })
+}
+
+export function deleteChangeDrawingLink(linkId: string): Promise<void> {
+  return request(`/api/change-drawing-links/${linkId}`, { method: 'DELETE' })
+}
+
+export function updateChange(changeId: string, patch: Record<string, unknown>): Promise<unknown> {
+  return request(`/api/changes/${changeId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
 export interface DashboardSummary {
   active_projects: number
   lod_shortage_drawings: number
@@ -126,6 +169,6 @@ export interface DashboardSummary {
   }>
 }
 
-export function fetchDashboard(): Promise<DashboardSummary> {
-  return request('/api/dashboard')
+export function fetchDashboard(projectId?: string): Promise<DashboardSummary> {
+  return request(projectId ? `/api/dashboard?project_id=${projectId}` : '/api/dashboard')
 }

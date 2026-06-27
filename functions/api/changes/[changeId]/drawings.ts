@@ -1,5 +1,5 @@
 import type { Env } from '../../_lib/types'
-import { generateId, jsonError, nowIso } from '../../_lib/http'
+import { generateId, jsonError, nowIso, writeAuditLog } from '../../_lib/http'
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const changeId = context.params.changeId as string
@@ -43,6 +43,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .bind(now, body.drawing_id)
       .run()
   }
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'change_drawing_link',
+    entityId: linkId,
+    action: 'create',
+    after: { change_id: changeId, drawing_id: body.drawing_id, impact_level: body.impact_level, sync_status: syncStatus },
+  })
 
   return Response.json({ link_id: linkId }, { status: 201 })
 }

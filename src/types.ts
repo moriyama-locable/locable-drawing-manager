@@ -5,6 +5,9 @@ export interface Project {
   project_status: 'active' | 'completed' | 'archived'
   sort_order: number | null
   alert_count?: number
+  archived_at?: string | null
+  exported_at?: string | null
+  export_file_url?: string | null
 }
 
 export type LodJudgement = '不要' | '不足' | 'OK' | '過剰'
@@ -43,6 +46,17 @@ export interface LodRule {
   necessity: '必須' | '任意' | '不要'
 }
 
+export interface ChangeDrawingLink {
+  link_id: string
+  change_id: string
+  drawing_id: string
+  drawing_no: string
+  drawing_name: string
+  impact_level: string
+  sync_status: string
+  last_checked_date: string | null
+}
+
 export interface ChangeItem {
   change_id: string
   change_reason: string
@@ -51,4 +65,5 @@ export interface ChangeItem {
   link_id?: string
   impact_level?: string
   sync_status?: string
+  links?: ChangeDrawingLink[]
 }

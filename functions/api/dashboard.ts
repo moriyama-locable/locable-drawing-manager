@@ -3,33 +3,50 @@ import type { Env } from './_lib/types'
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const db = context.env.DB
   const today = new Date().toISOString().slice(0, 10)
+  const projectId = new URL(context.request.url).searchParams.get('project_id')
+
+  const drawingProjectFilter = projectId ? `AND project_id = ?` : ''
+  const changeProjectFilter = projectId ? `AND project_id = ?` : ''
+  const bindIfProject = (stmt: D1PreparedStatement): D1PreparedStatement =>
+    projectId ? stmt.bind(projectId) : stmt
 
   const [activeProjects, lodShortage, changeAlerts, drawingOverdue, changeOverdue, locked, topItems] =
     await Promise.all([
       db
         .prepare(`SELECT COUNT(*) AS count FROM projects WHERE project_status = 'active' AND deleted_at IS NULL`)
         .first<{ count: number }>(),
-      db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE lod_judgement = '不足'`).first<{ count: number }>(),
-      db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE has_change_alert = 1`).first<{ count: number }>(),
-      db
-        .prepare(`SELECT COUNT(*) AS count FROM drawings WHERE final_deadline IS NOT NULL AND final_deadline < ? AND status != '承認済'`)
-        .bind(today)
-        .first<{ count: number }>(),
-      db
-        .prepare(`SELECT COUNT(*) AS count FROM changes WHERE requested_date IS NOT NULL AND requested_date < ? AND status NOT IN ('対応済', '却下')`)
-        .bind(today)
-        .first<{ count: number }>(),
-      db
-        .prepare(`SELECT COUNT(*) AS count FROM drawings WHERE lock_status IN ('承認ロック', '施工ロック', '竣工ロック')`)
-        .first<{ count: number }>(),
-      db
-        .prepare(
+      bindIfProject(
+        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE lod_judgement = '不足' ${drawingProjectFilter}`)
+      ).first<{ count: number }>(),
+      bindIfProject(
+        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE has_change_alert = 1 ${drawingProjectFilter}`)
+      ).first<{ count: number }>(),
+      (() => {
+        const stmt = db.prepare(
+          `SELECT COUNT(*) AS count FROM drawings WHERE final_deadline IS NOT NULL AND final_deadline < ? AND status != '承認済' ${drawingProjectFilter}`
+        )
+        return projectId ? stmt.bind(today, projectId) : stmt.bind(today)
+      })().first<{ count: number }>(),
+      (() => {
+        const stmt = db.prepare(
+          `SELECT COUNT(*) AS count FROM changes WHERE requested_date IS NOT NULL AND requested_date < ? AND status NOT IN ('対応済', '却下') ${changeProjectFilter}`
+        )
+        return projectId ? stmt.bind(today, projectId) : stmt.bind(today)
+      })().first<{ count: number }>(),
+      bindIfProject(
+        db.prepare(
+          `SELECT COUNT(*) AS count FROM drawings WHERE lock_status IN ('承認ロック', '施工ロック', '竣工ロック') ${drawingProjectFilter}`
+        )
+      ).first<{ count: number }>(),
+      bindIfProject(
+        db.prepare(
           `SELECT drawing_id, drawing_no, drawing_name, project_id, lod_judgement, has_change_alert, priority_score
            FROM drawings
+           WHERE 1 = 1 ${drawingProjectFilter}
            ORDER BY priority_score DESC, has_change_alert DESC
            LIMIT 10`
         )
-        .all(),
+      ).all(),
     ])
 
   return Response.json({

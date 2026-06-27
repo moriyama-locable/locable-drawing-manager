@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/types'
-import { jsonError, nowIso } from '../_lib/http'
+import { jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
 const PATCHABLE_FIELDS = [
   'change_reason',
@@ -36,6 +36,13 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   if (result.meta.changes === 0) {
     return jsonError('Change not found', 'NOT_FOUND', 404)
   }
+
+  await writeAuditLog(context.env.DB, {
+    entityType: 'change',
+    entityId: changeId,
+    action: 'update',
+    after: body,
+  })
 
   return Response.json({ change_id: changeId })
 }
