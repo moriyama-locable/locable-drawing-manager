@@ -1,4 +1,4 @@
-import type { ChangeItem, Drawing, LodRule, Project } from '../types'
+import type { ChangeItem, Drawing, LodRule, Phase, Project } from '../types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -47,11 +47,28 @@ export interface CreateProjectInput {
   current_phase: string
 }
 
-export function createProject(input: CreateProjectInput): Promise<{ project_id: string }> {
+export function createProject(
+  input: CreateProjectInput
+): Promise<{ project_id: string; default_drawings_created: number }> {
   return request('/api/projects', {
     method: 'POST',
     body: JSON.stringify(input),
   })
+}
+
+export function fetchPhases(): Promise<{ phases: Phase[] }> {
+  return request('/api/settings/phases')
+}
+
+export interface AdvancePhaseResult {
+  project_id: string
+  phase_code: string
+  updated_drawings: number
+  created_drawings: number
+}
+
+export function advanceProjectPhase(projectId: string): Promise<AdvancePhaseResult> {
+  return request(`/api/projects/${projectId}/advance-phase`, { method: 'POST' })
 }
 
 export function fetchDrawings(projectId: string): Promise<{ drawings: Drawing[] }> {

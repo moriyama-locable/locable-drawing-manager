@@ -1,3 +1,9 @@
+export interface Phase {
+  phase_code: string
+  phase_name: string
+  sort_order: number | null
+}
+
 export interface Project {
   project_id: string
   project_name: string

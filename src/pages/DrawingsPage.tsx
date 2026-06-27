@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  advanceProjectPhase,
   archiveProject,
   exportProject,
   fetchDrawings,
+  fetchPhases,
   fetchProjects,
   importDrawings,
   updateDrawing,
@@ -14,7 +16,7 @@ import DrawingListView from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
-import type { Drawing, LodJudgement, Project } from '../types'
+import type { Drawing, LodJudgement, Phase, Project } from '../types'
 import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
 
 const LOD_FILTER_OPTIONS: Array<LodJudgement | 'all'> = ['all', '不足', 'OK', '過剰', '不要']
@@ -44,6 +46,7 @@ function DrawingsPage() {
   const focus = searchParams.get('focus')
 
   const [projects, setProjects] = useState<Project[]>([])
+  const [phases, setPhases] = useState<Phase[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [drawings, setDrawings] = useState<Drawing[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -80,6 +83,9 @@ function DrawingsPage() {
         setSelectedProjectId(loaded[0].project_id)
       }
     })
+    fetchPhases()
+      .then((data) => setPhases(data.phases))
+      .catch((err: Error) => setError(err.message))
   }, [])
 
   useEffect(() => {
@@ -98,6 +104,17 @@ function DrawingsPage() {
     () => projects.find((project) => project.project_id === selectedProjectId) ?? null,
     [projects, selectedProjectId]
   )
+
+  const nextPhase = useMemo(() => {
+    if (!selectedProject) return null
+    const current = phases.find((phase) => phase.phase_code === selectedProject.current_phase)
+    if (!current) return null
+    return (
+      phases
+        .filter((phase) => (phase.sort_order ?? 0) > (current.sort_order ?? 0))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0] ?? null
+    )
+  }, [phases, selectedProject])
 
   const filteredDrawings = useMemo(() => {
     let result = drawings
@@ -207,6 +224,26 @@ function DrawingsPage() {
     }
   }
 
+  async function handleAdvancePhase() {
+    if (!selectedProjectId || !nextPhase) return
+    if (!window.confirm(`「${nextPhase.phase_name}」へ進行します。既存の図面の必要LODを再評価します。よろしいですか？`)) {
+      return
+    }
+    setLifecycleBusy(true)
+    setError(null)
+    try {
+      const result = await advanceProjectPhase(selectedProjectId)
+      await Promise.all([loadProjects(), loadDrawings(selectedProjectId)])
+      setNotice(
+        `「${nextPhase.phase_name}」へ進行しました。図面を${result.updated_drawings}件更新、${result.created_drawings}件追加しました。`
+      )
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
   async function handleMarkCompleted() {
     if (!selectedProjectId) return
     setLifecycleBusy(true)
@@ -282,6 +319,16 @@ function DrawingsPage() {
           {selectedProject && (
             <div className="settings-actions">
               <span>状態: {selectedProject.project_status}</span>
+              <span>
+                現在フェーズ:{' '}
+                {phases.find((phase) => phase.phase_code === selectedProject.current_phase)?.phase_name ??
+                  selectedProject.current_phase}
+              </span>
+              {selectedProject.project_status === 'active' && nextPhase && (
+                <button type="button" disabled={lifecycleBusy} onClick={handleAdvancePhase}>
+                  次のフェーズへ進む（{nextPhase.phase_name}）
+                </button>
+              )}
               {selectedProject.project_status === 'active' && (
                 <button type="button" disabled={lifecycleBusy} onClick={handleMarkCompleted}>
                   完了にする
