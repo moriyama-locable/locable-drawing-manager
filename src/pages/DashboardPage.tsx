@@ -42,6 +42,45 @@ function DashboardPage() {
 
       {summary && (
         <>
+          <section className="progress-summary">
+            <div className="progress-summary-header">
+              <span className="progress-summary-title">全体進捗（承認済の割合）</span>
+              <span className="progress-summary-percent">{summary.progress_percent}%</span>
+            </div>
+            <div className="progress-bar-track">
+              <div className="progress-bar-fill" style={{ width: `${summary.progress_percent}%` }} />
+            </div>
+            <div className="progress-summary-meta">
+              <span className="progress-summary-na">
+                対応不要の図面 {summary.not_needed_drawings}件（進捗から除外・無視してOK）
+              </span>
+            </div>
+            <div className="progress-status-chips">
+              {summary.status_breakdown.map((s) => (
+                <span key={s.status} className="progress-status-chip">
+                  {s.status} {s.count}件
+                </span>
+              ))}
+            </div>
+            <div className="lod-progress-row">
+              <span className="lod-progress-label">現在LOD分布（全体LODの中で今どこにいるか）</span>
+              <div className="lod-progress-scale">
+                {[0, 1, 2, 3, 4, 5, 6].map((lod) => {
+                  const count = summary.lod_distribution.find((d) => d.current_lod === lod)?.count ?? 0
+                  return (
+                    <div key={lod} className="lod-progress-step" title={`LOD${lod}: ${count}件`}>
+                      <div className={count > 0 ? 'lod-progress-dot filled' : 'lod-progress-dot'} />
+                      <span className="lod-progress-step-label">
+                        LOD{lod}
+                        {count > 0 ? `(${count})` : ''}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+
           <div className="dashboard-cards">
             <div className="dashboard-card">
               <span className="dashboard-card-label">進行中プロジェクト数</span>

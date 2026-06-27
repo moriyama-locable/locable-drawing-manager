@@ -12,6 +12,8 @@ export interface Project {
 
 export type LodJudgement = '不要' | '不足' | 'OK' | '過剰'
 
+export const DRAWING_STATUS_OPTIONS = ['未着手', '作図中', '確認中', '承認済'] as const
+
 export interface Drawing {
   drawing_id: string
   project_id: string

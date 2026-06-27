@@ -1,12 +1,30 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { archiveProject, exportProject, fetchDrawings, fetchProjects, updateProject } from '../api/client'
+import {
+  archiveProject,
+  exportProject,
+  fetchDrawings,
+  fetchProjects,
+  importDrawings,
+  updateDrawing,
+  updateProject,
+} from '../api/client'
 import ProjectList from '../components/ProjectList'
 import DrawingListView from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
-import type { Drawing, Project } from '../types'
+import type { Drawing, LodJudgement, Project } from '../types'
+import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
+
+const LOD_FILTER_OPTIONS: Array<LodJudgement | 'all'> = ['all', '不足', 'OK', '過剰', '不要']
+const LOD_FILTER_LABELS: Record<LodJudgement | 'all', string> = {
+  all: 'すべて',
+  不足: '不足（要対応）',
+  OK: 'OK',
+  過剰: '過剰',
+  不要: '不要（対応不要）',
+}
 
 type ViewMode = 'list' | 'card'
 
@@ -34,6 +52,9 @@ function DrawingsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [lifecycleBusy, setLifecycleBusy] = useState(false)
+  const [lodFilter, setLodFilter] = useState<LodJudgement | 'all'>('all')
+  const [importBusy, setImportBusy] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function loadProjects() {
     return fetchProjects()
@@ -88,6 +109,9 @@ function DrawingsPage() {
         (drawing) => drawing.final_deadline && drawing.final_deadline < today && drawing.status !== '承認済'
       )
     }
+    if (lodFilter !== 'all') {
+      result = result.filter((drawing) => drawing.lod_judgement === lodFilter)
+    }
     if (!searchText) return result
     const keyword = searchText.toLowerCase()
     return result.filter(
@@ -95,7 +119,93 @@ function DrawingsPage() {
         drawing.drawing_no.toLowerCase().includes(keyword) ||
         drawing.drawing_name.toLowerCase().includes(keyword)
     )
-  }, [drawings, searchText, focus])
+  }, [drawings, searchText, focus, lodFilter])
+
+  const progressStats = useMemo(() => {
+    const needed = drawings.filter((d) => d.necessity !== '不要')
+    const notNeeded = drawings.length - needed.length
+    const approved = needed.filter((d) => d.status === '承認済').length
+    const percent = needed.length > 0 ? Math.round((approved / needed.length) * 100) : 0
+    const statusCounts = new Map<string, number>()
+    for (const d of needed) {
+      statusCounts.set(d.status, (statusCounts.get(d.status) ?? 0) + 1)
+    }
+    const currentLodCounts = new Map<number, number>()
+    for (const d of needed) {
+      currentLodCounts.set(d.current_lod, (currentLodCounts.get(d.current_lod) ?? 0) + 1)
+    }
+    return {
+      total: drawings.length,
+      needed: needed.length,
+      notNeeded,
+      approved,
+      percent,
+      statusCounts: Array.from(statusCounts.entries()),
+      currentLodCounts: Array.from(currentLodCounts.entries()).sort((a, b) => a[0] - b[0]),
+    }
+  }, [drawings])
+
+  async function handleStatusChange(drawingId: string, status: string) {
+    setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
+    try {
+      await updateDrawing(drawingId, { status })
+    } catch (err) {
+      setError((err as Error).message)
+      if (selectedProjectId) loadDrawings(selectedProjectId)
+    }
+  }
+
+  function handleDownloadTemplate() {
+    const blob = new Blob([buildDrawingImportTemplate()], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'drawing_import_template.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleImportFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selectedProjectId) return
+    setImportBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const text = await file.text()
+      const rows = parseCsv(text)
+      const result = await importDrawings(
+        selectedProjectId,
+        rows.map((row) => ({
+          drawing_no: row.drawing_no,
+          drawing_name: row.drawing_name,
+          drawing_type: row.drawing_type,
+          necessity: row.necessity || undefined,
+          required_lod: row.required_lod ? Number(row.required_lod) : undefined,
+          current_lod: row.current_lod ? Number(row.current_lod) : undefined,
+          status: row.status,
+          lock_status: row.lock_status || undefined,
+          final_deadline: row.final_deadline || undefined,
+        }))
+      )
+      await loadDrawings(selectedProjectId)
+      if (result.errors.length > 0) {
+        setError(
+          `${result.imported_count}件取り込みました。${result.errors.length}件はエラーで取り込めませんでした（${result.errors
+            .slice(0, 3)
+            .map((e2) => `${e2.row}行目: ${e2.message}`)
+            .join(', ')}）`
+        )
+      } else {
+        setNotice(`${result.imported_count}件の図面をCSVから取り込みました。`)
+      }
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setImportBusy(false)
+    }
+  }
 
   async function handleMarkCompleted() {
     if (!selectedProjectId) return
@@ -190,11 +300,71 @@ function DrawingsPage() {
             </div>
           )}
 
+          {selectedProjectId && drawings.length > 0 && (
+            <div className="progress-summary">
+              <div className="progress-summary-header">
+                <span className="progress-summary-title">全体進捗</span>
+                <span className="progress-summary-percent">{progressStats.percent}%</span>
+              </div>
+              <div className="progress-bar-track">
+                <div className="progress-bar-fill" style={{ width: `${progressStats.percent}%` }} />
+              </div>
+              <div className="progress-summary-meta">
+                <span>対応対象 {progressStats.needed}件中 承認済 {progressStats.approved}件</span>
+                <span className="progress-summary-na">対応不要 {progressStats.notNeeded}件（無視してOK）</span>
+              </div>
+              <div className="progress-status-chips">
+                {progressStats.statusCounts.map(([status, count]) => (
+                  <span key={status} className="progress-status-chip">
+                    {status} {count}件
+                  </span>
+                ))}
+              </div>
+              <div className="lod-progress-row">
+                <span className="lod-progress-label">現在LOD分布</span>
+                <div className="lod-progress-scale">
+                  {[0, 1, 2, 3, 4, 5, 6].map((lod) => {
+                    const count = progressStats.currentLodCounts.find(([l]) => l === lod)?.[1] ?? 0
+                    return (
+                      <div key={lod} className="lod-progress-step" title={`LOD${lod}: ${count}件`}>
+                        <div
+                          className={count > 0 ? 'lod-progress-dot filled' : 'lod-progress-dot'}
+                        />
+                        <span className="lod-progress-step-label">
+                          LOD{lod}
+                          {count > 0 ? `(${count})` : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {selectedProjectId && (
             <DrawingCreateForm
               projectId={selectedProjectId}
               onCreated={() => loadDrawings(selectedProjectId)}
             />
+          )}
+
+          {selectedProjectId && (
+            <div className="csv-import-row">
+              <button type="button" disabled={importBusy} onClick={() => fileInputRef.current?.click()}>
+                {importBusy ? '取り込み中...' : 'CSVインポート'}
+              </button>
+              <button type="button" className="link-button" onClick={handleDownloadTemplate}>
+                テンプレートをダウンロード
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                style={{ display: 'none' }}
+                onChange={handleImportFile}
+              />
+            </div>
           )}
 
           <div className="drawings-toolbar">
@@ -204,6 +374,16 @@ function DrawingsPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
+            <label className="lod-filter-select">
+              LOD判定
+              <select value={lodFilter} onChange={(e) => setLodFilter(e.target.value as LodJudgement | 'all')}>
+                {LOD_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {LOD_FILTER_LABELS[opt]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="view-toggle">
               <button
                 type="button"
@@ -225,7 +405,11 @@ function DrawingsPage() {
           {filteredDrawings.length === 0 ? (
             <p className="empty-hint">図面がありません。</p>
           ) : viewMode === 'list' ? (
-            <DrawingListView drawings={filteredDrawings} onOpenDetail={setSelectedDrawingId} />
+            <DrawingListView
+              drawings={filteredDrawings}
+              onOpenDetail={setSelectedDrawingId}
+              onStatusChange={handleStatusChange}
+            />
           ) : (
             <DrawingCardView drawings={filteredDrawings} onOpenDetail={setSelectedDrawingId} />
           )}

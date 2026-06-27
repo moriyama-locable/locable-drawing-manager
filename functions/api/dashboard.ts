@@ -10,8 +10,20 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const bindIfProject = (stmt: D1PreparedStatement): D1PreparedStatement =>
     projectId ? stmt.bind(projectId) : stmt
 
-  const [activeProjects, lodShortage, changeAlerts, drawingOverdue, changeOverdue, locked, topItems] =
-    await Promise.all([
+  const [
+    activeProjects,
+    lodShortage,
+    changeAlerts,
+    drawingOverdue,
+    changeOverdue,
+    locked,
+    topItems,
+    statusBreakdown,
+    lodDistribution,
+    notNeeded,
+    approvedNeeded,
+    totalNeeded,
+  ] = await Promise.all([
       db
         .prepare(`SELECT COUNT(*) AS count FROM projects WHERE project_status = 'active' AND deleted_at IS NULL`)
         .first<{ count: number }>(),
@@ -47,7 +59,31 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
            LIMIT 10`
         )
       ).all(),
+      bindIfProject(
+        db.prepare(
+          `SELECT status, COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter} GROUP BY status`
+        )
+      ).all<{ status: string; count: number }>(),
+      bindIfProject(
+        db.prepare(
+          `SELECT current_lod, COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter} GROUP BY current_lod ORDER BY current_lod ASC`
+        )
+      ).all<{ current_lod: number; count: number }>(),
+      bindIfProject(
+        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE necessity = '不要' ${drawingProjectFilter}`)
+      ).first<{ count: number }>(),
+      bindIfProject(
+        db.prepare(
+          `SELECT COUNT(*) AS count FROM drawings WHERE necessity != '不要' AND status = '承認済' ${drawingProjectFilter}`
+        )
+      ).first<{ count: number }>(),
+      bindIfProject(
+        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter}`)
+      ).first<{ count: number }>(),
     ])
+
+  const total = totalNeeded?.count ?? 0
+  const approved = approvedNeeded?.count ?? 0
 
   return Response.json({
     active_projects: activeProjects?.count ?? 0,
@@ -56,5 +92,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     overdue_count: (drawingOverdue?.count ?? 0) + (changeOverdue?.count ?? 0),
     locked_drawings: locked?.count ?? 0,
     today_priority_items: topItems.results,
+    status_breakdown: statusBreakdown.results,
+    lod_distribution: lodDistribution.results,
+    not_needed_drawings: notNeeded?.count ?? 0,
+    progress_percent: total > 0 ? Math.round((approved / total) * 100) : 0,
   })
 }
