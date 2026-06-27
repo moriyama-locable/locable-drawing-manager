@@ -16,7 +16,7 @@ import DrawingListView from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
-import type { Drawing, LodJudgement, Phase, Project } from '../types'
+import { DRAWING_STATUS_PROGRESS, type Drawing, type LodJudgement, type Phase, type Project } from '../types'
 import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
 
 const LOD_FILTER_OPTIONS: Array<LodJudgement | 'all'> = ['all', '不足', 'OK', '過剰', '不要']
@@ -142,7 +142,8 @@ function DrawingsPage() {
     const needed = drawings.filter((d) => d.necessity !== '不要')
     const notNeeded = drawings.length - needed.length
     const approved = needed.filter((d) => d.status === '承認済').length
-    const percent = needed.length > 0 ? Math.round((approved / needed.length) * 100) : 0
+    const progressSum = needed.reduce((sum, d) => sum + (DRAWING_STATUS_PROGRESS[d.status] ?? 0), 0)
+    const percent = needed.length > 0 ? Math.round(progressSum / needed.length) : 0
     const statusCounts = new Map<string, number>()
     for (const d of needed) {
       statusCounts.set(d.status, (statusCounts.get(d.status) ?? 0) + 1)

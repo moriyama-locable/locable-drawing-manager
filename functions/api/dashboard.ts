@@ -1,5 +1,12 @@
 import type { Env } from './_lib/types'
 
+const STATUS_PROGRESS: Record<string, number> = {
+  未着手: 0,
+  作図中: 50,
+  確認中: 70,
+  承認済: 100,
+}
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const db = context.env.DB
   const today = new Date().toISOString().slice(0, 10)
@@ -21,7 +28,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     statusBreakdown,
     lodDistribution,
     notNeeded,
-    approvedNeeded,
     totalNeeded,
   ] = await Promise.all([
       db
@@ -73,17 +79,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE necessity = '不要' ${drawingProjectFilter}`)
       ).first<{ count: number }>(),
       bindIfProject(
-        db.prepare(
-          `SELECT COUNT(*) AS count FROM drawings WHERE necessity != '不要' AND status = '承認済' ${drawingProjectFilter}`
-        )
-      ).first<{ count: number }>(),
-      bindIfProject(
         db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter}`)
       ).first<{ count: number }>(),
     ])
 
   const total = totalNeeded?.count ?? 0
-  const approved = approvedNeeded?.count ?? 0
+  const progressSum = statusBreakdown.results.reduce(
+    (sum, row) => sum + (STATUS_PROGRESS[row.status] ?? 0) * row.count,
+    0
+  )
 
   return Response.json({
     active_projects: activeProjects?.count ?? 0,
@@ -95,6 +99,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     status_breakdown: statusBreakdown.results,
     lod_distribution: lodDistribution.results,
     not_needed_drawings: notNeeded?.count ?? 0,
-    progress_percent: total > 0 ? Math.round((approved / total) * 100) : 0,
+    progress_percent: total > 0 ? Math.round(progressSum / total) : 0,
   })
 }
