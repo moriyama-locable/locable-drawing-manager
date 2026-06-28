@@ -108,14 +108,89 @@ body {
   align-items: flex-start;
 }
 
-.drawings-left-pane {
+.drawings-left-pane-stack {
   width: 260px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawings-left-pane {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(21, 32, 66, 0.08);
   padding: 12px;
+}
+
+.drawings-management-pane {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(21, 32, 66, 0.08);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawings-management-pane select,
+.drawings-management-pane input {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.drawings-management-pane > button {
+  padding: 6px 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.drawings-management-current-phase {
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.drawings-management-current-phase strong {
+  color: var(--color-primary);
+}
+
+.project-phase-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-phase-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.project-phase-chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  font-size: 11px;
+}
+
+.project-phase-chevron.collapsed {
+  transform: rotate(-90deg);
 }
 
 .drawings-right-pane,
@@ -229,6 +304,11 @@ body {
 
 .work-queue-chip.warn {
   border-color: var(--color-accent);
+}
+
+.work-queue-label-warn {
+  font-weight: 700;
+  color: var(--color-accent);
 }
 
 .work-queue-count {
