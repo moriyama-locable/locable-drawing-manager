@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   advanceProjectPhase,
   archiveProject,
+  createProject,
   exportProject,
   fetchDrawings,
   fetchDrawingTypes,
@@ -85,7 +86,12 @@ function DrawingsPage() {
   const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [importBusy, setImportBusy] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [newProjectPhase, setNewProjectPhase] = useState('')
+  const [newProjectError, setNewProjectError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function loadProjects() {
@@ -133,6 +139,22 @@ function DrawingsPage() {
 
   function handleProjectCreated(projectId: string) {
     loadProjects().then(() => setSelectedProjectId(projectId))
+  }
+
+  async function handleCreateProject() {
+    if (!newProjectName || !newProjectPhase) return
+    try {
+      const { project_id } = await createProject({
+        project_name: newProjectName,
+        current_phase: newProjectPhase,
+      })
+      setNewProjectName('')
+      setNewProjectPhase('')
+      setNewProjectError(null)
+      handleProjectCreated(project_id)
+    } catch (err) {
+      setNewProjectError((err as Error).message)
+    }
   }
 
   const selectedProject = useMemo(
@@ -212,6 +234,17 @@ function DrawingsPage() {
     return sorted
   }, [filteredDrawings, sortKey, sortDirection])
 
+  useEffect(() => {
+    setPage(1)
+  }, [selectedProjectId, searchText, lodFilter, necessityFilter, statusFilter, typeFilter, focus])
+
+  const totalPages = Math.max(1, Math.ceil(sortedDrawings.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pagedDrawings = useMemo(
+    () => sortedDrawings.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedDrawings, currentPage, pageSize]
+  )
+
   function handleSortChange(key: DrawingSortKey) {
     if (sortKey === key) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
@@ -235,6 +268,18 @@ function DrawingsPage() {
     setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
     try {
       await updateDrawing(drawingId, { status })
+    } catch (err) {
+      setError((err as Error).message)
+      if (selectedProjectId) loadDrawings(selectedProjectId)
+    }
+  }
+
+  async function handleTypeChange(drawingId: string, drawingType: string) {
+    setDrawings((prev) =>
+      prev.map((d) => (d.drawing_id === drawingId ? { ...d, drawing_type: drawingType } : d))
+    )
+    try {
+      await updateDrawing(drawingId, { drawing_type: drawingType })
     } catch (err) {
       setError((err as Error).message)
       if (selectedProjectId) loadDrawings(selectedProjectId)
@@ -471,59 +516,84 @@ function DrawingsPage() {
       )}
 
       <div className="drawings-layout">
-        <aside className="drawings-left-pane">
-          <ProjectList
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            onSelect={setSelectedProjectId}
-            onCreated={handleProjectCreated}
-          />
+        <aside className="drawings-left-pane-stack">
+          <div className="drawings-left-pane">
+            <ProjectList
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onSelect={setSelectedProjectId}
+            />
+          </div>
 
-          {selectedProject && (
-            <div className="settings-actions">
-              <span>状態: {selectedProject.project_status}</span>
-              <span>
+          <div className="drawings-management-pane">
+            {selectedProject && (
+              <span className="drawings-management-current-phase">
                 現在フェーズ:{' '}
-                {phases.find((phase) => phase.phase_code === selectedProject.current_phase)?.phase_name ??
-                  selectedProject.current_phase}
+                <strong>
+                  {phases.find((phase) => phase.phase_code === selectedProject.current_phase)?.phase_name ??
+                    selectedProject.current_phase}
+                </strong>
               </span>
-              {selectedProject.project_status === 'active' && nextPhase && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleAdvancePhase}>
-                  次のフェーズへ進む（{nextPhase.phase_name}）
-                </button>
-              )}
-              {selectedProject.project_status === 'active' && prevPhase && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleRevertPhase}>
-                  前のフェーズへ戻る（{prevPhase.phase_name}）
-                </button>
-              )}
-              {selectedProject.project_status === 'active' && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleMarkCompleted}>
-                  完了にする
-                </button>
-              )}
-              {selectedProject.project_status === 'completed' && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleRevertToActive}>
-                  進行中に戻す
-                </button>
-              )}
-              {selectedProject.project_status === 'completed' && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleExport}>
-                  書き出し
-                </button>
-              )}
-              {selectedProject.project_status === 'completed' && selectedProject.exported_at && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleArchive}>
-                  アーカイブする
-                </button>
-              )}
-              {selectedProject.project_status === 'archived' && (
-                <button type="button" disabled={lifecycleBusy} onClick={handleUnarchive}>
-                  アーカイブを取り消す
-                </button>
-              )}
-            </div>
-          )}
+            )}
+
+            <select value={newProjectPhase} onChange={(e) => setNewProjectPhase(e.target.value)}>
+              <option value="">フェーズを選択</option>
+              {phases.map((phase) => (
+                <option key={phase.phase_code} value={phase.phase_code}>
+                  {phase.phase_name}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="プロジェクト名"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+            />
+            <button type="button" onClick={handleCreateProject}>
+              + プロジェクト追加
+            </button>
+            {newProjectError && <p className="error-text">{newProjectError}</p>}
+
+            {selectedProject && (
+              <div className="settings-actions">
+                {selectedProject.project_status === 'active' && nextPhase && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleAdvancePhase}>
+                    次のフェーズへ進む（{nextPhase.phase_name}）
+                  </button>
+                )}
+                {selectedProject.project_status === 'active' && prevPhase && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleRevertPhase}>
+                    前のフェーズへ戻る（{prevPhase.phase_name}）
+                  </button>
+                )}
+                {selectedProject.project_status === 'active' && (
+                  <button type="button" className="primary" disabled={lifecycleBusy} onClick={handleMarkCompleted}>
+                    ✓ 完了にする
+                  </button>
+                )}
+                {selectedProject.project_status === 'completed' && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleRevertToActive}>
+                    進行中に戻す
+                  </button>
+                )}
+                {selectedProject.project_status === 'completed' && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleExport}>
+                    書き出し
+                  </button>
+                )}
+                {selectedProject.project_status === 'completed' && selectedProject.exported_at && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleArchive}>
+                    アーカイブする
+                  </button>
+                )}
+                {selectedProject.project_status === 'archived' && (
+                  <button type="button" disabled={lifecycleBusy} onClick={handleUnarchive}>
+                    アーカイブを取り消す
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </aside>
 
         <section className="drawings-center-pane">
@@ -536,17 +606,18 @@ function DrawingsPage() {
                   <span className="work-queue-count">{workQueueStats.notStarted}</span>
                 </div>
                 <div className={workQueueStats.needsReview > 0 ? 'work-queue-chip warn' : 'work-queue-chip'}>
-                  <span>要確認</span>
+                  <span className={workQueueStats.needsReview > 0 ? 'work-queue-label-warn' : ''}>要確認</span>
                   <span className="work-queue-count">{workQueueStats.needsReview}</span>
                 </div>
                 <div className={workQueueStats.hasDeadline > 0 ? 'work-queue-chip warn' : 'work-queue-chip'}>
-                  <span>期限あり</span>
+                  <span className={workQueueStats.hasDeadline > 0 ? 'work-queue-label-warn' : ''}>期限あり</span>
                   <span className="work-queue-count">{workQueueStats.hasDeadline}</span>
                 </div>
               </div>
             </div>
           )}
 
+          <div className="drawings-table-card">
           <div className="drawings-toolbar">
             <input
               type="search"
@@ -622,17 +693,56 @@ function DrawingsPage() {
             <p className="empty-hint">図面がありません。</p>
           ) : viewMode === 'list' ? (
             <DrawingListView
-              drawings={sortedDrawings}
+              drawings={pagedDrawings}
               onOpenDetail={setSelectedDrawingId}
               onStatusChange={handleStatusChange}
               statusOptions={statusFilterOptions}
+              onTypeChange={handleTypeChange}
+              typeOptions={typeFilterOptions}
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSortChange={handleSortChange}
             />
           ) : (
-            <DrawingCardView drawings={sortedDrawings} onOpenDetail={setSelectedDrawingId} />
+            <DrawingCardView drawings={pagedDrawings} onOpenDetail={setSelectedDrawingId} />
           )}
+
+          {sortedDrawings.length > 0 && (
+            <div className="drawings-pagination">
+              <span className="drawings-pagination-total">全{sortedDrawings.length}件</span>
+              <div className="drawings-pagination-controls">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ‹
+                </button>
+                <span className="drawings-pagination-page">{currentPage}</span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  ›
+                </button>
+              </div>
+              <label className="lod-filter-select">
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setPage(1)
+                  }}
+                >
+                  <option value={20}>20件 / ページ</option>
+                  <option value={50}>50件 / ページ</option>
+                  <option value={100}>100件 / ページ</option>
+                </select>
+              </label>
+            </div>
+          )}
+          </div>
         </section>
 
         <aside className="drawings-detail-pane">

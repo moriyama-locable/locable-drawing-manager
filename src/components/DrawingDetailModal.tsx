@@ -12,6 +12,7 @@ interface DrawingDetailModalProps {
 type EditableDrawing = Pick<
   Drawing,
   | 'drawing_type'
+  | 'necessity'
   | 'required_lod'
   | 'current_lod'
   | 'status'
@@ -28,6 +29,7 @@ type EditableDrawing = Pick<
 function toForm(drawing: Drawing): EditableDrawing {
   return {
     drawing_type: drawing.drawing_type,
+    necessity: drawing.necessity,
     required_lod: drawing.required_lod,
     current_lod: drawing.current_lod,
     status: drawing.status,
@@ -141,6 +143,8 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
               <dl className="detail-grid">
                 <dt>図面種別</dt>
                 <dd>{drawing.drawing_type}</dd>
+                <dt>必要性</dt>
+                <dd>{drawing.necessity}</dd>
                 <dt>必要LOD</dt>
                 <dd>{drawing.required_lod}</dd>
                 <dt>現在LOD</dt>
@@ -240,6 +244,17 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
                         {type}
                       </option>
                     ))}
+                  </select>
+                </dd>
+                <dt>必要性</dt>
+                <dd>
+                  <select
+                    value={form.necessity}
+                    onChange={(e) => updateField('necessity', e.target.value as EditableDrawing['necessity'])}
+                  >
+                    <option value="必須">必須</option>
+                    <option value="任意">任意</option>
+                    <option value="不要">不要</option>
                   </select>
                 </dd>
                 <dt>必要LOD</dt>
