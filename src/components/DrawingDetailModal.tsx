@@ -6,6 +6,7 @@ import LodBadge from './LodBadge'
 interface DrawingDetailModalProps {
   drawingId: string
   onClose: () => void
+  variant?: 'modal' | 'panel'
 }
 
 type EditableDrawing = Pick<
@@ -41,7 +42,7 @@ function toForm(drawing: Drawing): EditableDrawing {
   }
 }
 
-function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
+function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDetailModalProps) {
   const [drawing, setDrawing] = useState<Drawing | null>(null)
   const [relatedChanges, setRelatedChanges] = useState<ChangeItem[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -115,12 +116,15 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
     }
   }
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="modal-close" onClick={onClose}>
-          閉じる
-        </button>
+  const isPanel = variant === 'panel'
+  const content = (
+    <div
+      className={isPanel ? 'detail-panel' : 'modal-panel'}
+      onClick={isPanel ? undefined : (e) => e.stopPropagation()}
+    >
+      <button type="button" className="modal-close" onClick={onClose}>
+        {isPanel ? '選択を解除' : '閉じる'}
+      </button>
         {error && <p className="error-text">{error}</p>}
         {!error && !drawing && <p>読み込み中...</p>}
         {drawing && !isEditing && (
@@ -357,7 +361,14 @@ function DrawingDetailModal({ drawingId, onClose }: DrawingDetailModalProps) {
             </div>
           </>
         )}
-      </div>
+    </div>
+  )
+
+  if (isPanel) return content
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      {content}
     </div>
   )
 }
