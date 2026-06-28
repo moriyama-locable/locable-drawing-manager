@@ -36,7 +36,9 @@ interface DrawingListViewProps {
   drawings: Drawing[]
   onOpenDetail: (drawingId: string) => void
   onStatusChange?: (drawingId: string, status: string) => void
+  onTypeChange?: (drawingId: string, drawingType: string) => void
   statusOptions?: string[]
+  typeOptions?: string[]
   sortKey?: DrawingSortKey | null
   sortDirection?: SortDirection
   onSortChange?: (key: DrawingSortKey) => void
@@ -46,7 +48,9 @@ function DrawingListView({
   drawings,
   onOpenDetail,
   onStatusChange,
+  onTypeChange,
   statusOptions = [],
+  typeOptions = [],
   sortKey,
   sortDirection,
   onSortChange,
@@ -90,7 +94,26 @@ function DrawingListView({
                   {drawing.drawing_name}
                 </button>
               </td>
-              <td>{drawing.drawing_type}</td>
+              <td>
+                {onTypeChange ? (
+                  <select
+                    className="status-select"
+                    value={drawing.drawing_type}
+                    onChange={(e) => onTypeChange(drawing.drawing_id, e.target.value)}
+                  >
+                    {!typeOptions.includes(drawing.drawing_type) && (
+                      <option value={drawing.drawing_type}>{drawing.drawing_type}</option>
+                    )}
+                    {typeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  drawing.drawing_type
+                )}
+              </td>
               <td>{drawing.necessity}</td>
               <td>{drawing.required_lod}</td>
               <td>{drawing.current_lod}</td>

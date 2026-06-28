@@ -274,6 +274,18 @@ function DrawingsPage() {
     }
   }
 
+  async function handleTypeChange(drawingId: string, drawingType: string) {
+    setDrawings((prev) =>
+      prev.map((d) => (d.drawing_id === drawingId ? { ...d, drawing_type: drawingType } : d))
+    )
+    try {
+      await updateDrawing(drawingId, { drawing_type: drawingType })
+    } catch (err) {
+      setError((err as Error).message)
+      if (selectedProjectId) loadDrawings(selectedProjectId)
+    }
+  }
+
   function handleDownloadTemplate() {
     const blob = new Blob([buildDrawingImportTemplate()], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -685,6 +697,8 @@ function DrawingsPage() {
               onOpenDetail={setSelectedDrawingId}
               onStatusChange={handleStatusChange}
               statusOptions={statusFilterOptions}
+              onTypeChange={handleTypeChange}
+              typeOptions={typeFilterOptions}
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSortChange={handleSortChange}
