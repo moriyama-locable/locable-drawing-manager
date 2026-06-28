@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchDrawingDetail, fetchDrawingTypes, fetchLodDefinitions, fetchStatusMaster, updateDrawing } from '../api/client'
+import { fetchDrawingDetail, fetchLodDefinitions, fetchStatusMaster, updateDrawing } from '../api/client'
 import type { ChangeItem, Drawing, LodDefinition } from '../types'
-import LodBadge from './LodBadge'
 
 interface DrawingDetailModalProps {
   drawingId: string
@@ -9,38 +8,14 @@ interface DrawingDetailModalProps {
   variant?: 'modal' | 'panel'
 }
 
-type EditableDrawing = Pick<
-  Drawing,
-  | 'drawing_type'
-  | 'necessity'
-  | 'required_lod'
-  | 'current_lod'
-  | 'status'
-  | 'lock_status'
-  | 'approval_status'
-  | 'assignee'
-  | 'review_deadline'
-  | 'final_deadline'
-  | 'drive_pdf_url'
-  | 'drive_source_url'
-  | 'notes'
->
+type EditableDrawing = Pick<Drawing, 'necessity' | 'lod' | 'status' | 'deadline'>
 
 function toForm(drawing: Drawing): EditableDrawing {
   return {
-    drawing_type: drawing.drawing_type,
     necessity: drawing.necessity,
-    required_lod: drawing.required_lod,
-    current_lod: drawing.current_lod,
+    lod: drawing.lod,
     status: drawing.status,
-    lock_status: drawing.lock_status,
-    approval_status: drawing.approval_status,
-    assignee: drawing.assignee,
-    review_deadline: drawing.review_deadline,
-    final_deadline: drawing.final_deadline,
-    drive_pdf_url: drawing.drive_pdf_url,
-    drive_source_url: drawing.drive_source_url,
-    notes: drawing.notes,
+    deadline: drawing.deadline,
   }
 }
 
@@ -51,9 +26,7 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState<EditableDrawing | null>(null)
   const [saving, setSaving] = useState(false)
-  const [drawingTypeOptions, setDrawingTypeOptions] = useState<string[]>([])
   const [statusOptions, setStatusOptions] = useState<string[]>([])
-  const [lockStatusOptions, setLockStatusOptions] = useState<string[]>([])
   const [lodOptions, setLodOptions] = useState<LodDefinition[]>([])
 
   useEffect(() => {
@@ -73,14 +46,8 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
   }, [drawingId])
 
   useEffect(() => {
-    fetchDrawingTypes()
-      .then((data) => setDrawingTypeOptions(data.drawing_types.map((t) => t.drawing_type)))
-      .catch(() => {})
     fetchStatusMaster('drawing')
       .then((data) => setStatusOptions(data.status_master.map((s) => s.status_name)))
-      .catch(() => {})
-    fetchStatusMaster('lock')
-      .then((data) => setLockStatusOptions(data.status_master.map((s) => s.status_name)))
       .catch(() => {})
     fetchLodDefinitions()
       .then((data) => setLodOptions(data.lod_definitions))
@@ -145,18 +112,10 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
             <section>
               <h3>基本情報</h3>
               <dl className="detail-grid">
-                <dt>図面種別</dt>
-                <dd>{drawing.drawing_type}</dd>
                 <dt>必要性</dt>
                 <dd>{drawing.necessity}</dd>
-                <dt>必要LOD</dt>
-                <dd>{drawing.required_lod}</dd>
-                <dt>現在LOD</dt>
-                <dd>{drawing.current_lod}</dd>
-                <dt>LOD判定</dt>
-                <dd>
-                  <LodBadge judgement={drawing.lod_judgement} />
-                </dd>
+                <dt>LOD</dt>
+                <dd>{drawing.lod}</dd>
               </dl>
             </section>
 
@@ -165,42 +124,8 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
               <dl className="detail-grid">
                 <dt>ステータス</dt>
                 <dd>{drawing.status}</dd>
-                <dt>ロック状態</dt>
-                <dd>{drawing.lock_status}</dd>
-                <dt>承認状態</dt>
-                <dd>{drawing.approval_status ?? '-'}</dd>
-                <dt>担当者</dt>
-                <dd>{drawing.assignee ?? '-'}</dd>
-                <dt>確認期限</dt>
-                <dd>{drawing.review_deadline ?? '-'}</dd>
-                <dt>確定期限</dt>
-                <dd>{drawing.final_deadline ?? '-'}</dd>
-              </dl>
-            </section>
-
-            <section>
-              <h3>Driveリンク</h3>
-              <dl className="detail-grid">
-                <dt>最新PDF</dt>
-                <dd>
-                  {drawing.drive_pdf_url ? (
-                    <a href={drawing.drive_pdf_url} target="_blank" rel="noreferrer">
-                      開く
-                    </a>
-                  ) : (
-                    '-'
-                  )}
-                </dd>
-                <dt>作業元ファイル</dt>
-                <dd>
-                  {drawing.drive_source_url ? (
-                    <a href={drawing.drive_source_url} target="_blank" rel="noreferrer">
-                      開く
-                    </a>
-                  ) : (
-                    '-'
-                  )}
-                </dd>
+                <dt>期限</dt>
+                <dd>{drawing.deadline ?? '-'}</dd>
               </dl>
             </section>
 
@@ -220,12 +145,6 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
                 </ul>
               )}
             </section>
-
-            <section>
-              <h3>備考</h3>
-              <p>{drawing.notes ?? '-'}</p>
-              <p>次アクション: {drawing.next_action ?? '-'}</p>
-            </section>
           </>
         )}
         {drawing && isEditing && form && (
@@ -237,19 +156,6 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
             <section>
               <h3>基本情報</h3>
               <dl className="detail-grid">
-                <dt>図面種別</dt>
-                <dd>
-                  <select value={form.drawing_type} onChange={(e) => updateField('drawing_type', e.target.value)}>
-                    {!drawingTypeOptions.includes(form.drawing_type) && (
-                      <option value={form.drawing_type}>{form.drawing_type}</option>
-                    )}
-                    {drawingTypeOptions.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
                 <dt>必要性</dt>
                 <dd>
                   <select
@@ -261,30 +167,11 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
                     <option value="不要">不要</option>
                   </select>
                 </dd>
-                <dt>必要LOD</dt>
+                <dt>LOD</dt>
                 <dd>
-                  <select
-                    value={form.required_lod}
-                    onChange={(e) => updateField('required_lod', Number(e.target.value))}
-                  >
-                    {!lodOptions.some((l) => l.lod_level === form.required_lod) && (
-                      <option value={form.required_lod}>{form.required_lod}</option>
-                    )}
-                    {lodOptions.map((lod) => (
-                      <option key={lod.lod_level} value={lod.lod_level}>
-                        {lod.lod_name} {lod.description}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
-                <dt>現在LOD</dt>
-                <dd>
-                  <select
-                    value={form.current_lod}
-                    onChange={(e) => updateField('current_lod', Number(e.target.value))}
-                  >
-                    {!lodOptions.some((l) => l.lod_level === form.current_lod) && (
-                      <option value={form.current_lod}>{form.current_lod}</option>
+                  <select value={form.lod} onChange={(e) => updateField('lod', Number(e.target.value))}>
+                    {!lodOptions.some((l) => l.lod_level === form.lod) && (
+                      <option value={form.lod}>{form.lod}</option>
                     )}
                     {lodOptions.map((lod) => (
                       <option key={lod.lod_level} value={lod.lod_level}>
@@ -312,78 +199,15 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
                     ))}
                   </select>
                 </dd>
-                <dt>ロック状態</dt>
-                <dd>
-                  <select value={form.lock_status} onChange={(e) => updateField('lock_status', e.target.value)}>
-                    {!lockStatusOptions.includes(form.lock_status) && (
-                      <option value={form.lock_status}>{form.lock_status}</option>
-                    )}
-                    {lockStatusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
-                <dt>承認状態</dt>
-                <dd>
-                  <input
-                    value={form.approval_status ?? ''}
-                    onChange={(e) => updateField('approval_status', e.target.value || null)}
-                  />
-                </dd>
-                <dt>担当者</dt>
-                <dd>
-                  <input
-                    value={form.assignee ?? ''}
-                    onChange={(e) => updateField('assignee', e.target.value || null)}
-                  />
-                </dd>
-                <dt>確認期限</dt>
+                <dt>期限</dt>
                 <dd>
                   <input
                     type="date"
-                    value={form.review_deadline ?? ''}
-                    onChange={(e) => updateField('review_deadline', e.target.value || null)}
-                  />
-                </dd>
-                <dt>確定期限</dt>
-                <dd>
-                  <input
-                    type="date"
-                    value={form.final_deadline ?? ''}
-                    onChange={(e) => updateField('final_deadline', e.target.value || null)}
+                    value={form.deadline ?? ''}
+                    onChange={(e) => updateField('deadline', e.target.value || null)}
                   />
                 </dd>
               </dl>
-            </section>
-
-            <section>
-              <h3>Driveリンク</h3>
-              <dl className="detail-grid">
-                <dt>最新PDF</dt>
-                <dd>
-                  <input
-                    value={form.drive_pdf_url ?? ''}
-                    onChange={(e) => updateField('drive_pdf_url', e.target.value || null)}
-                  />
-                </dd>
-                <dt>作業元ファイル</dt>
-                <dd>
-                  <input
-                    value={form.drive_source_url ?? ''}
-                    onChange={(e) => updateField('drive_source_url', e.target.value || null)}
-                  />
-                </dd>
-              </dl>
-            </section>
-
-            <section>
-              <h3>備考</h3>
-              <textarea
-                value={form.notes ?? ''}
-                onChange={(e) => updateField('notes', e.target.value || null)}
-              />
             </section>
 
             <div className="modal-actions">

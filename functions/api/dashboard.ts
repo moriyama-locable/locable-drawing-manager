@@ -17,31 +17,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const bindIfProject = (stmt: D1PreparedStatement): D1PreparedStatement =>
     projectId ? stmt.bind(projectId) : stmt
 
-  const [
-    activeProjects,
-    lodShortage,
-    changeAlerts,
-    drawingOverdue,
-    changeOverdue,
-    locked,
-    topItems,
-    statusBreakdown,
-    lodDistribution,
-    notNeeded,
-    totalNeeded,
-  ] = await Promise.all([
+  const [activeProjects, drawingOverdue, changeOverdue, upcomingDeadlines, statusBreakdown, notNeeded, totalNeeded] =
+    await Promise.all([
       db
         .prepare(`SELECT COUNT(*) AS count FROM projects WHERE project_status = 'active' AND deleted_at IS NULL`)
         .first<{ count: number }>(),
-      bindIfProject(
-        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE lod_judgement = '不足' ${drawingProjectFilter}`)
-      ).first<{ count: number }>(),
-      bindIfProject(
-        db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE has_change_alert = 1 ${drawingProjectFilter}`)
-      ).first<{ count: number }>(),
       (() => {
         const stmt = db.prepare(
-          `SELECT COUNT(*) AS count FROM drawings WHERE final_deadline IS NOT NULL AND final_deadline < ? AND status != '承認済' ${drawingProjectFilter}`
+          `SELECT COUNT(*) AS count FROM drawings WHERE deadline IS NOT NULL AND deadline < ? AND status != '承認済' ${drawingProjectFilter}`
         )
         return projectId ? stmt.bind(today, projectId) : stmt.bind(today)
       })().first<{ count: number }>(),
@@ -53,15 +36,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       })().first<{ count: number }>(),
       bindIfProject(
         db.prepare(
-          `SELECT COUNT(*) AS count FROM drawings WHERE lock_status IN ('承認ロック', '施工ロック', '竣工ロック') ${drawingProjectFilter}`
-        )
-      ).first<{ count: number }>(),
-      bindIfProject(
-        db.prepare(
-          `SELECT drawing_id, drawing_no, drawing_name, project_id, lod_judgement, has_change_alert, priority_score
+          `SELECT drawing_id, drawing_no, drawing_name, project_id, deadline
            FROM drawings
-           WHERE 1 = 1 ${drawingProjectFilter}
-           ORDER BY priority_score DESC, has_change_alert DESC
+           WHERE deadline IS NOT NULL AND status != '承認済' ${drawingProjectFilter}
+           ORDER BY deadline ASC
            LIMIT 10`
         )
       ).all(),
@@ -70,11 +48,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           `SELECT status, COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter} GROUP BY status`
         )
       ).all<{ status: string; count: number }>(),
-      bindIfProject(
-        db.prepare(
-          `SELECT current_lod, COUNT(*) AS count FROM drawings WHERE necessity != '不要' ${drawingProjectFilter} GROUP BY current_lod ORDER BY current_lod ASC`
-        )
-      ).all<{ current_lod: number; count: number }>(),
       bindIfProject(
         db.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE necessity = '不要' ${drawingProjectFilter}`)
       ).first<{ count: number }>(),
@@ -91,13 +64,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   return Response.json({
     active_projects: activeProjects?.count ?? 0,
-    lod_shortage_drawings: lodShortage?.count ?? 0,
-    change_alert_drawings: changeAlerts?.count ?? 0,
     overdue_count: (drawingOverdue?.count ?? 0) + (changeOverdue?.count ?? 0),
-    locked_drawings: locked?.count ?? 0,
-    today_priority_items: topItems.results,
+    upcoming_deadlines: upcomingDeadlines.results,
     status_breakdown: statusBreakdown.results,
-    lod_distribution: lodDistribution.results,
     not_needed_drawings: notNeeded?.count ?? 0,
     progress_percent: total > 0 ? Math.round(progressSum / total) : 0,
   })

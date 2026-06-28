@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createDrawing, fetchDrawingTypes, fetchStatusMaster } from '../api/client'
+import { createDrawing, fetchLodDefinitions, fetchStatusMaster } from '../api/client'
+import type { LodDefinition } from '../types'
 
 interface DrawingCreateFormProps {
   projectId: string
@@ -9,20 +10,17 @@ interface DrawingCreateFormProps {
 function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
   const [drawingNo, setDrawingNo] = useState('')
   const [drawingName, setDrawingName] = useState('')
-  const [drawingType, setDrawingType] = useState('')
   const [necessity, setNecessity] = useState('任意')
+  const [lod, setLod] = useState(0)
   const [status, setStatus] = useState('')
+  const [deadline, setDeadline] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [drawingTypeOptions, setDrawingTypeOptions] = useState<string[]>([])
+  const [lodOptions, setLodOptions] = useState<LodDefinition[]>([])
   const [statusOptions, setStatusOptions] = useState<string[]>([])
 
   useEffect(() => {
-    fetchDrawingTypes()
-      .then((data) => {
-        const types = data.drawing_types.map((t) => t.drawing_type)
-        setDrawingTypeOptions(types)
-        setDrawingType((prev) => prev || types[0] || '')
-      })
+    fetchLodDefinitions()
+      .then((data) => setLodOptions(data.lod_definitions))
       .catch(() => {})
     fetchStatusMaster('drawing')
       .then((data) => {
@@ -34,17 +32,19 @@ function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
   }, [])
 
   async function handleCreate() {
-    if (!drawingNo || !drawingName || !drawingType || !status) return
+    if (!drawingNo || !drawingName || !status) return
     try {
       await createDrawing(projectId, {
         drawing_no: drawingNo,
         drawing_name: drawingName,
-        drawing_type: drawingType,
         necessity,
+        lod,
         status,
+        deadline: deadline || undefined,
       })
       setDrawingNo('')
       setDrawingName('')
+      setDeadline('')
       setError(null)
       onCreated()
     } catch (err) {
@@ -56,17 +56,18 @@ function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
     <div className="change-form drawing-create-form">
       <input placeholder="図面番号" value={drawingNo} onChange={(e) => setDrawingNo(e.target.value)} />
       <input placeholder="図面名" value={drawingName} onChange={(e) => setDrawingName(e.target.value)} />
-      <select value={drawingType} onChange={(e) => setDrawingType(e.target.value)}>
-        {drawingTypeOptions.map((type) => (
-          <option key={type} value={type}>
-            {type}
-          </option>
-        ))}
-      </select>
       <select value={necessity} onChange={(e) => setNecessity(e.target.value)}>
         <option value="必須">必須</option>
         <option value="任意">任意</option>
         <option value="不要">不要</option>
+      </select>
+      <select value={lod} onChange={(e) => setLod(Number(e.target.value))}>
+        <option value={0}>LOD0 未着手</option>
+        {lodOptions.map((l) => (
+          <option key={l.lod_level} value={l.lod_level}>
+            {l.lod_name} {l.description}
+          </option>
+        ))}
       </select>
       <select value={status} onChange={(e) => setStatus(e.target.value)}>
         {statusOptions.map((name) => (
@@ -75,6 +76,7 @@ function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
           </option>
         ))}
       </select>
+      <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
       <button type="button" onClick={handleCreate}>
         + 図面を追加
       </button>

@@ -35,15 +35,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     .bind(linkId, changeId, change.project_id, body.drawing_id, body.impact_level, syncStatus, now, now)
     .run()
 
-  const hasAlert = syncStatus === '要確認' || syncStatus === '未反映'
-  if (hasAlert) {
-    await context.env.DB.prepare(
-      `UPDATE drawings SET has_change_alert = 1, updated_at = ? WHERE drawing_id = ?`
-    )
-      .bind(now, body.drawing_id)
-      .run()
-  }
-
   await writeAuditLog(context.env.DB, {
     entityType: 'change_drawing_link',
     entityId: linkId,

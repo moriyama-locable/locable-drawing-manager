@@ -47,20 +47,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const now = nowIso()
 
   const drawingRows = drawings.results as Record<string, unknown>[]
-  const lodStatusRows = drawingRows.map((d) => ({
-    drawing_no: d.drawing_no,
-    drawing_name: d.drawing_name,
-    drawing_type: d.drawing_type,
-    required_lod: d.required_lod,
-    current_lod: d.current_lod,
-    lod_judgement: d.lod_judgement,
-  }))
-  const driveLinkRows = drawingRows.map((d) => ({
-    drawing_no: d.drawing_no,
-    drawing_name: d.drawing_name,
-    drive_pdf_url: d.drive_pdf_url,
-    drive_source_url: d.drive_source_url,
-  }))
 
   const overviewMarkdown = [
     `# ${project.project_name} アーカイブ概要`,
@@ -99,7 +85,5 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     drawings_csv: toCsv(drawingRows),
     changes_csv: toCsv(changes.results as Record<string, unknown>[]),
     change_drawing_links_csv: toCsv(links.results as Record<string, unknown>[]),
-    lod_status_csv: toCsv(lodStatusRows),
-    drive_links_csv: toCsv(driveLinkRows),
   })
 }

@@ -40,18 +40,8 @@ function splitCsvLine(line: string): string[] {
   return result
 }
 
-export const DRAWING_IMPORT_HEADERS = [
-  'drawing_no',
-  'drawing_name',
-  'drawing_type',
-  'necessity',
-  'required_lod',
-  'current_lod',
-  'status',
-  'lock_status',
-  'final_deadline',
-]
+export const DRAWING_IMPORT_HEADERS = ['drawing_no', 'drawing_name', 'necessity', 'lod', 'status', 'deadline']
 
 export function buildDrawingImportTemplate(): string {
-  return `${DRAWING_IMPORT_HEADERS.join(',')}\nA-001,1階平面図,全体平面図,必須,,0,未着手,編集可,\n`
+  return `${DRAWING_IMPORT_HEADERS.join(',')}\nA-001,1階平面図,必須,1,未着手,\n`
 }
