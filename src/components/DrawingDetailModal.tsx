@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchDrawingDetail, fetchLodDefinitions, fetchStatusMaster, updateDrawing } from '../api/client'
 import type { ChangeItem, Drawing, LodDefinition } from '../types'
+import TagBadge from './TagBadge'
 
 interface DrawingDetailModalProps {
   drawingId: string
@@ -113,7 +114,9 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
               <h3>基本情報</h3>
               <dl className="detail-grid">
                 <dt>必要性</dt>
-                <dd>{drawing.necessity}</dd>
+                <dd>
+                  <TagBadge value={drawing.necessity} />
+                </dd>
                 <dt>LOD</dt>
                 <dd>{drawing.lod}</dd>
               </dl>
@@ -123,7 +126,9 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
               <h3>進捗情報</h3>
               <dl className="detail-grid">
                 <dt>ステータス</dt>
-                <dd>{drawing.status}</dd>
+                <dd>
+                  <TagBadge value={drawing.status} />
+                </dd>
                 <dt>期限</dt>
                 <dd>{drawing.deadline ?? '-'}</dd>
               </dl>
