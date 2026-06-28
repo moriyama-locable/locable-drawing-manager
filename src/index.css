@@ -41,6 +41,18 @@ body {
   color: var(--color-white);
 }
 
+.app-nav-toggle {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-white);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
 .app-logo {
   height: 22px;
   width: auto;
@@ -77,6 +89,11 @@ body {
 .app-main {
   flex: 1;
   padding: 24px;
+  min-width: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 .page h1 {
@@ -1074,4 +1091,129 @@ a.dashboard-card:hover {
   font-size: 28px;
   font-weight: 500;
   color: var(--color-primary);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 900px) {
+  .app-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .app-nav-toggle {
+    display: block;
+  }
+
+  .app-nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 4px;
+    order: 3;
+  }
+
+  .app-nav.open {
+    display: flex;
+  }
+
+  .app-nav a {
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .app-nav a.active {
+    border-bottom-color: var(--color-accent);
+  }
+
+  .app-main {
+    padding: 16px;
+  }
+
+  .drawings-layout {
+    flex-direction: column;
+  }
+
+  .drawings-left-pane-stack,
+  .drawings-detail-pane {
+    width: 100%;
+  }
+
+  .drawings-detail-pane {
+    position: static;
+  }
+
+  .settings-layout {
+    flex-direction: column;
+  }
+
+  .settings-nav {
+    width: 100%;
+  }
+
+  .settings-nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid dt {
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-title {
+    font-size: 13px;
+  }
+
+  .drawings-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .drawings-header-actions {
+    justify-content: flex-start;
+  }
+
+  .drawings-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .drawings-toolbar input[type='search'] {
+    max-width: none;
+  }
+
+  .lod-filter-select {
+    justify-content: space-between;
+  }
+
+  .lod-filter-select select {
+    flex: 1;
+  }
+
+  .drawings-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-panel {
+    width: 100%;
+    max-height: 100svh;
+    border-radius: 0;
+  }
+
+  .drawing-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

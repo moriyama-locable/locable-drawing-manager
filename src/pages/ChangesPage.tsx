@@ -144,6 +144,7 @@ function ChangesPage() {
         {visibleChanges.length === 0 ? (
           <p className="empty-hint">変更項目がありません。</p>
         ) : (
+          <div className="table-scroll">
           <table className="drawing-table">
             <thead>
               <tr>
@@ -204,6 +205,7 @@ function ChangesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

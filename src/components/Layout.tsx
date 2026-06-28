@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import logoUrl from '../../assets/locable-logo-white.svg'
 
@@ -9,18 +10,30 @@ const navItems = [
 ]
 
 function Layout() {
+  const [navOpen, setNavOpen] = useState(false)
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <img src={logoUrl} alt="LOCABLE" className="app-logo" />
         <span className="app-title">図面管理システム</span>
-        <nav className="app-nav">
+        <button
+          type="button"
+          className="app-nav-toggle"
+          aria-label="メニューを開く"
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen((prev) => !prev)}
+        >
+          ☰
+        </button>
+        <nav className={navOpen ? 'app-nav open' : 'app-nav'}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) => (isActive ? 'active' : '')}
+              onClick={() => setNavOpen(false)}
             >
               {item.label}
             </NavLink>

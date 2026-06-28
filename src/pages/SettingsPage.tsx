@@ -109,6 +109,7 @@ function DrawingTypePanel() {
         <HelpIcon text="図面の種類（例：平面図、設備図など）を登録・管理します。並び順は一覧表示時の順序に使われます。" />
       </h2>
       {error && <p className="error-text">{error}</p>}
+      <div className="table-scroll">
       <table className="drawing-table">
         <thead>
           <tr>
@@ -142,6 +143,7 @@ function DrawingTypePanel() {
           ))}
         </tbody>
       </table>
+      </div>
       <div className="settings-actions">
         <button type="button" onClick={addRow}>
           種別を追加
@@ -234,6 +236,7 @@ function StatusMasterPanel({
         />
       </h2>
       {error && <p className="error-text">{error}</p>}
+      <div className="table-scroll">
       <table className="drawing-table">
         <thead>
           <tr>
@@ -281,6 +284,7 @@ function StatusMasterPanel({
           ))}
         </tbody>
       </table>
+      </div>
       <div className="settings-actions">
         <button type="button" onClick={addRow}>
           項目を追加
@@ -344,6 +348,7 @@ function LodRulesPanel() {
         </a>
       </div>
 
+      <div className="table-scroll">
       <table className="drawing-table">
         <thead>
           <tr>
@@ -397,6 +402,7 @@ function LodRulesPanel() {
           ))}
         </tbody>
       </table>
+      </div>
 
       <div className="settings-actions">
         <button type="button" onClick={addRule}>

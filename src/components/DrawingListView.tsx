@@ -56,6 +56,7 @@ function DrawingListView({
   onSortChange,
 }: DrawingListViewProps) {
   return (
+    <div className="table-scroll">
     <table className="drawing-table">
       <thead>
         <tr>
@@ -153,6 +154,7 @@ function DrawingListView({
         })}
       </tbody>
     </table>
+    </div>
   )
 }
 
