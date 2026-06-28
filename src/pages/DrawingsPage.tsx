@@ -15,7 +15,11 @@ import {
   updateProject,
 } from '../api/client'
 import ProjectList from '../components/ProjectList'
-import DrawingListView, { type DrawingSortKey, type SortDirection } from '../components/DrawingListView'
+import DrawingListView, {
+  type DrawingGroupKey,
+  type DrawingSortKey,
+  type SortDirection,
+} from '../components/DrawingListView'
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
@@ -65,6 +69,7 @@ function DrawingsPage() {
   const [statusMasterItems, setStatusMasterItems] = useState<StatusMasterItem[]>([])
   const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [groupBy, setGroupBy] = useState<DrawingGroupKey>('none')
   const [importBusy, setImportBusy] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -228,10 +233,10 @@ function DrawingsPage() {
     return { notStarted, needsReview, hasDeadline }
   }, [drawings])
 
-  async function handleStatusChange(drawingId: string, status: string) {
-    setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
+  async function handleDrawingFieldChange(drawingId: string, patch: Partial<Drawing>) {
+    setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, ...patch } : d)))
     try {
-      await updateDrawing(drawingId, { status })
+      await updateDrawing(drawingId, patch)
     } catch (err) {
       setError((err as Error).message)
       if (selectedProjectId) loadDrawings(selectedProjectId)
@@ -594,6 +599,16 @@ function DrawingsPage() {
                 ))}
               </select>
             </label>
+            {viewMode === 'list' && (
+              <label className="lod-filter-select">
+                グループ化
+                <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as DrawingGroupKey)}>
+                  <option value="none">なし</option>
+                  <option value="status">ステータス</option>
+                  <option value="necessity">必要性</option>
+                </select>
+              </label>
+            )}
             <div className="view-toggle">
               <button
                 type="button"
@@ -616,19 +631,20 @@ function DrawingsPage() {
             <p className="empty-hint">図面がありません。</p>
           ) : viewMode === 'list' ? (
             <DrawingListView
-              drawings={pagedDrawings}
+              drawings={groupBy === 'none' ? pagedDrawings : sortedDrawings}
               onOpenDetail={setSelectedDrawingId}
-              onStatusChange={handleStatusChange}
+              onFieldChange={handleDrawingFieldChange}
               statusOptions={statusFilterOptions}
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSortChange={handleSortChange}
+              groupBy={groupBy}
             />
           ) : (
             <DrawingCardView drawings={pagedDrawings} onOpenDetail={setSelectedDrawingId} />
           )}
 
-          {sortedDrawings.length > 0 && (
+          {sortedDrawings.length > 0 && groupBy === 'none' && (
             <div className="drawings-pagination">
               <span className="drawings-pagination-total">全{sortedDrawings.length}件</span>
               <div className="drawings-pagination-controls">

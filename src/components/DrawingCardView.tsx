@@ -1,4 +1,5 @@
 import type { Drawing } from '../types'
+import TagBadge from './TagBadge'
 
 interface DrawingCardViewProps {
   drawings: Drawing[]
@@ -21,8 +22,8 @@ function DrawingCardView({ drawings, onOpenDetail }: DrawingCardViewProps) {
           </div>
           <div className="drawing-card-name">{drawing.drawing_name}</div>
           <div className="drawing-card-meta">
-            <span>{drawing.necessity}</span>
-            <span>{drawing.status}</span>
+            <TagBadge value={drawing.necessity} />
+            <TagBadge value={drawing.status} />
           </div>
           <div className="drawing-card-meta">
             <span>期限: {drawing.deadline ?? '-'}</span>
