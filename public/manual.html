@@ -269,7 +269,7 @@ npm run db:migrate:remote:prod</code></pre>
         <tr><td>図面番号 / 図面名称</td><td>クリックで図面詳細モーダルを開く</td></tr>
         <tr><td>種別</td><td>図面種別</td></tr>
         <tr><td>必要性</td><td>必須／任意／不要</td></tr>
-        <tr><td>必要LOD / 現在LOD</td><td>数値（0〜6）</td></tr>
+        <tr><td>必要LOD / 現在LOD</td><td>図面の密度（0:未着手／1:簡易／2:標準／3:詳細）</td></tr>
         <tr><td>LOD判定</td><td>不要／不足／OK／過剰のバッジ</td></tr>
         <tr><td>ステータス</td><td>未着手などの進行状態</td></tr>
         <tr><td>ロック状態</td><td>未ロック／承認ロック／施工ロック／竣工ロックなど</td></tr>
@@ -330,7 +330,7 @@ npm run db:migrate:remote:prod</code></pre>
         <tr><th>列名</th><th>説明</th></tr>
         <tr><td>フェーズコード</td><td>プロジェクトの「フェーズ」欄と一致させるコード（例：基本設計）</td></tr>
         <tr><td>図面種別</td><td>図面登録時の「図面種別」欄と一致させる種別名（例：平面図）</td></tr>
-        <tr><td>必要LOD</td><td>0〜6の数値。そのフェーズ・種別における到達すべき詳細度</td></tr>
+        <tr><td>必要LOD</td><td>1:簡易／2:標準／3:詳細。そのフェーズ・種別における到達すべき密度</td></tr>
         <tr><td>必要性</td><td>必須／任意／不要</td></tr>
       </table>
       <ul>

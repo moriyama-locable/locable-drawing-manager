@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchDashboard, fetchProjects, type DashboardSummary } from '../api/client'
-import type { Project } from '../types'
+import { fetchDashboard, fetchLodDefinitions, fetchProjects, type DashboardSummary } from '../api/client'
+import type { LodDefinition, Project } from '../types'
 
 function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [lodDefinitions, setLodDefinitions] = useState<LodDefinition[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProjects()
       .then((data) => setProjects(data.projects))
+      .catch((err: Error) => setError(err.message))
+    fetchLodDefinitions()
+      .then((data) => setLodDefinitions(data.lod_definitions))
       .catch((err: Error) => setError(err.message))
   }, [])
 
@@ -63,20 +67,22 @@ function DashboardPage() {
               ))}
             </div>
             <div className="lod-progress-row">
-              <span className="lod-progress-label">現在LOD分布（全体LODの中で今どこにいるか）</span>
+              <span className="lod-progress-label">現在LOD分布（簡易→標準→詳細の密度でどこまで進んでいるか）</span>
               <div className="lod-progress-scale">
-                {[0, 1, 2, 3, 4, 5, 6].map((lod) => {
-                  const count = summary.lod_distribution.find((d) => d.current_lod === lod)?.count ?? 0
-                  return (
-                    <div key={lod} className="lod-progress-step" title={`LOD${lod}: ${count}件`}>
-                      <div className={count > 0 ? 'lod-progress-dot filled' : 'lod-progress-dot'} />
-                      <span className="lod-progress-step-label">
-                        LOD{lod}
-                        {count > 0 ? `(${count})` : ''}
-                      </span>
-                    </div>
-                  )
-                })}
+                {[{ lod_level: 0, lod_name: '未着手' }, ...lodDefinitions]
+                  .sort((a, b) => a.lod_level - b.lod_level)
+                  .map((lod) => {
+                    const count = summary.lod_distribution.find((d) => d.current_lod === lod.lod_level)?.count ?? 0
+                    return (
+                      <div key={lod.lod_level} className="lod-progress-step" title={`${lod.lod_name}: ${count}件`}>
+                        <div className={count > 0 ? 'lod-progress-dot filled' : 'lod-progress-dot'} />
+                        <span className="lod-progress-step-label">
+                          {lod.lod_name}
+                          {count > 0 ? `(${count})` : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
               </div>
             </div>
           </section>
