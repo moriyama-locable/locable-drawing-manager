@@ -3,7 +3,6 @@ import { generateId, jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
 const GROUP_COLUMN: Record<string, string> = {
   drawing: 'status',
-  lock: 'lock_status',
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {

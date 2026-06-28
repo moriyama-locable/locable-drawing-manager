@@ -6,7 +6,6 @@ import {
   createProject,
   exportProject,
   fetchDrawings,
-  fetchDrawingTypes,
   fetchPhases,
   fetchProjects,
   fetchStatusMaster,
@@ -20,24 +19,8 @@ import DrawingListView, { type DrawingSortKey, type SortDirection } from '../com
 import DrawingCardView from '../components/DrawingCardView'
 import DrawingDetailModal from '../components/DrawingDetailModal'
 import DrawingCreateForm from '../components/DrawingCreateForm'
-import {
-  type Drawing,
-  type DrawingTypeOption,
-  type LodJudgement,
-  type Phase,
-  type Project,
-  type StatusMasterItem,
-} from '../types'
+import { type Drawing, type Phase, type Project, type StatusMasterItem } from '../types'
 import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
-
-const LOD_FILTER_OPTIONS: Array<LodJudgement | 'all'> = ['all', '不足', 'OK', '過剰', '不要']
-const LOD_FILTER_LABELS: Record<LodJudgement | 'all', string> = {
-  all: 'すべて',
-  不足: '不足（要対応）',
-  OK: 'OK',
-  過剰: '過剰',
-  不要: '不要（対応不要）',
-}
 
 const NECESSITY_FILTER_OPTIONS = ['all', '必須', '任意', '不要'] as const
 type NecessityFilter = (typeof NECESSITY_FILTER_OPTIONS)[number]
@@ -77,11 +60,8 @@ function DrawingsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [lifecycleBusy, setLifecycleBusy] = useState(false)
-  const [lodFilter, setLodFilter] = useState<LodJudgement | 'all'>('all')
   const [necessityFilter, setNecessityFilter] = useState<NecessityFilter>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [drawingTypeOptions, setDrawingTypeOptions] = useState<DrawingTypeOption[]>([])
   const [statusMasterItems, setStatusMasterItems] = useState<StatusMasterItem[]>([])
   const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
@@ -120,9 +100,6 @@ function DrawingsPage() {
     })
     fetchPhases()
       .then((data) => setPhases(data.phases))
-      .catch((err: Error) => setError(err.message))
-    fetchDrawingTypes()
-      .then((data) => setDrawingTypeOptions(data.drawing_types))
       .catch((err: Error) => setError(err.message))
     fetchStatusMaster('drawing')
       .then((data) => setStatusMasterItems(data.status_master))
@@ -184,11 +161,6 @@ function DrawingsPage() {
     )
   }, [phases, selectedProject])
 
-  const typeFilterOptions = useMemo(
-    () => drawingTypeOptions.map((opt) => opt.drawing_type),
-    [drawingTypeOptions]
-  )
-
   const statusFilterOptions = useMemo(
     () => statusMasterItems.map((item) => item.status_name),
     [statusMasterItems]
@@ -196,25 +168,17 @@ function DrawingsPage() {
 
   const filteredDrawings = useMemo(() => {
     let result = drawings
-    if (focus === 'lod_shortage') {
-      result = result.filter((drawing) => drawing.lod_judgement === '不足')
-    } else if (focus === 'overdue') {
+    if (focus === 'overdue') {
       const today = new Date().toISOString().slice(0, 10)
       result = result.filter(
-        (drawing) => drawing.final_deadline && drawing.final_deadline < today && drawing.status !== '承認済'
+        (drawing) => drawing.deadline && drawing.deadline < today && drawing.status !== '承認済'
       )
-    }
-    if (lodFilter !== 'all') {
-      result = result.filter((drawing) => drawing.lod_judgement === lodFilter)
     }
     if (necessityFilter !== 'all') {
       result = result.filter((drawing) => drawing.necessity === necessityFilter)
     }
     if (statusFilter !== 'all') {
       result = result.filter((drawing) => drawing.status === statusFilter)
-    }
-    if (typeFilter !== 'all') {
-      result = result.filter((drawing) => drawing.drawing_type === typeFilter)
     }
     if (searchText) {
       const keyword = searchText.toLowerCase()
@@ -225,7 +189,7 @@ function DrawingsPage() {
       )
     }
     return result
-  }, [drawings, searchText, focus, lodFilter, necessityFilter, statusFilter, typeFilter])
+  }, [drawings, searchText, focus, necessityFilter, statusFilter])
 
   const sortedDrawings = useMemo(() => {
     if (!sortKey) return filteredDrawings
@@ -236,7 +200,7 @@ function DrawingsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [selectedProjectId, searchText, lodFilter, necessityFilter, statusFilter, typeFilter, focus])
+  }, [selectedProjectId, searchText, necessityFilter, statusFilter, focus])
 
   const totalPages = Math.max(1, Math.ceil(sortedDrawings.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -259,7 +223,7 @@ function DrawingsPage() {
     const notStarted = drawings.filter((d) => d.status === '未着手').length
     const needsReview = drawings.filter((d) => d.status === '要確認').length
     const hasDeadline = drawings.filter(
-      (d) => d.final_deadline && d.final_deadline >= today && d.status !== '承認済'
+      (d) => d.deadline && d.deadline >= today && d.status !== '承認済'
     ).length
     return { notStarted, needsReview, hasDeadline }
   }, [drawings])
@@ -268,18 +232,6 @@ function DrawingsPage() {
     setDrawings((prev) => prev.map((d) => (d.drawing_id === drawingId ? { ...d, status } : d)))
     try {
       await updateDrawing(drawingId, { status })
-    } catch (err) {
-      setError((err as Error).message)
-      if (selectedProjectId) loadDrawings(selectedProjectId)
-    }
-  }
-
-  async function handleTypeChange(drawingId: string, drawingType: string) {
-    setDrawings((prev) =>
-      prev.map((d) => (d.drawing_id === drawingId ? { ...d, drawing_type: drawingType } : d))
-    )
-    try {
-      await updateDrawing(drawingId, { drawing_type: drawingType })
     } catch (err) {
       setError((err as Error).message)
       if (selectedProjectId) loadDrawings(selectedProjectId)
@@ -311,13 +263,10 @@ function DrawingsPage() {
         rows.map((row) => ({
           drawing_no: row.drawing_no,
           drawing_name: row.drawing_name,
-          drawing_type: row.drawing_type,
           necessity: row.necessity || undefined,
-          required_lod: row.required_lod ? Number(row.required_lod) : undefined,
-          current_lod: row.current_lod ? Number(row.current_lod) : undefined,
+          lod: row.lod ? Number(row.lod) : undefined,
           status: row.status,
-          lock_status: row.lock_status || undefined,
-          final_deadline: row.final_deadline || undefined,
+          deadline: row.deadline || undefined,
         }))
       )
       await loadDrawings(selectedProjectId)
@@ -340,17 +289,15 @@ function DrawingsPage() {
 
   async function handleAdvancePhase() {
     if (!selectedProjectId || !nextPhase) return
-    if (!window.confirm(`「${nextPhase.phase_name}」へ進行します。既存の図面の必要LODを再評価します。よろしいですか？`)) {
+    if (!window.confirm(`「${nextPhase.phase_name}」へ進行します。よろしいですか？`)) {
       return
     }
     setLifecycleBusy(true)
     setError(null)
     try {
-      const result = await advanceProjectPhase(selectedProjectId)
+      await advanceProjectPhase(selectedProjectId)
       await Promise.all([loadProjects(), loadDrawings(selectedProjectId)])
-      setNotice(
-        `「${nextPhase.phase_name}」へ進行しました。図面を${result.updated_drawings}件更新、${result.created_drawings}件追加しました。`
-      )
+      setNotice(`「${nextPhase.phase_name}」へ進行しました。`)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -360,15 +307,15 @@ function DrawingsPage() {
 
   async function handleRevertPhase() {
     if (!selectedProjectId || !prevPhase) return
-    if (!window.confirm(`「${prevPhase.phase_name}」へ戻します。既存の図面の必要LODを再評価します。よろしいですか？`)) {
+    if (!window.confirm(`「${prevPhase.phase_name}」へ戻します。よろしいですか？`)) {
       return
     }
     setLifecycleBusy(true)
     setError(null)
     try {
-      const result = await revertProjectPhase(selectedProjectId)
+      await revertProjectPhase(selectedProjectId)
       await Promise.all([loadProjects(), loadDrawings(selectedProjectId)])
-      setNotice(`「${prevPhase.phase_name}」へ戻しました。図面を${result.updated_drawings}件更新しました。`)
+      setNotice(`「${prevPhase.phase_name}」へ戻しました。`)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -438,8 +385,6 @@ function DrawingsPage() {
       downloadFile(`${prefix}_drawings.csv`, result.drawings_csv, 'text/csv')
       downloadFile(`${prefix}_changes.csv`, result.changes_csv, 'text/csv')
       downloadFile(`${prefix}_change_drawing_links.csv`, result.change_drawing_links_csv, 'text/csv')
-      downloadFile(`${prefix}_lod_status.csv`, result.lod_status_csv, 'text/csv')
-      downloadFile(`${prefix}_drive_links.csv`, result.drive_links_csv, 'text/csv')
       await loadProjects()
       setNotice('書き出しが完了しました。ファイルをGoogle Driveの99_Archiveフォルダへ保存してください。')
     } catch (err) {
@@ -502,7 +447,6 @@ function DrawingsPage() {
 
       {error && <p className="error-text">{error}</p>}
       {notice && <p className="empty-hint">{notice}</p>}
-      {focus === 'lod_shortage' && <p className="empty-hint">LOD不足の図面のみ表示しています。</p>}
       {focus === 'overdue' && <p className="empty-hint">期限超過の図面のみ表示しています。</p>}
 
       {showCreateForm && selectedProjectId && (
@@ -626,16 +570,6 @@ function DrawingsPage() {
               onChange={(e) => setSearchText(e.target.value)}
             />
             <label className="lod-filter-select">
-              LOD判定
-              <select value={lodFilter} onChange={(e) => setLodFilter(e.target.value as LodJudgement | 'all')}>
-                {LOD_FILTER_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {LOD_FILTER_LABELS[opt]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="lod-filter-select">
               必要性
               <select
                 value={necessityFilter}
@@ -654,17 +588,6 @@ function DrawingsPage() {
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">すべて</option>
                 {statusFilterOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="lod-filter-select">
-              種別
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="all">すべて</option>
-                {typeFilterOptions.map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
@@ -697,8 +620,6 @@ function DrawingsPage() {
               onOpenDetail={setSelectedDrawingId}
               onStatusChange={handleStatusChange}
               statusOptions={statusFilterOptions}
-              onTypeChange={handleTypeChange}
-              typeOptions={typeFilterOptions}
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSortChange={handleSortChange}

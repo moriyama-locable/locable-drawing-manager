@@ -16,8 +16,6 @@ export interface Project {
   export_file_url?: string | null
 }
 
-export type LodJudgement = '不要' | '不足' | 'OK' | '過剰'
-
 export interface LodDefinition {
   lod_level: number
   lod_name: string
@@ -25,12 +23,7 @@ export interface LodDefinition {
   completion_criteria: string | null
 }
 
-export interface DrawingTypeOption {
-  drawing_type: string
-  sort_order: number | null
-}
-
-export type StatusMasterGroup = 'drawing' | 'change' | 'lock'
+export type StatusMasterGroup = 'drawing' | 'change'
 
 export interface StatusMasterItem {
   status_id: string
@@ -45,33 +38,12 @@ export interface Drawing {
   project_id: string
   drawing_no: string
   drawing_name: string
-  drawing_type: string
   necessity: '必須' | '任意' | '不要'
-  required_lod: number
-  current_lod: number
-  lod_judgement: LodJudgement
+  lod: number
   status: string
-  lock_status: string
-  approval_status: string | null
-  assignee: string | null
-  first_submit_date: string | null
-  review_deadline: string | null
-  final_deadline: string | null
-  drive_pdf_url: string | null
-  drive_source_url: string | null
-  version: string | null
-  has_change_alert: number
-  priority_score: number | null
-  next_action: string | null
-  notes: string | null
-}
-
-export interface LodRule {
-  rule_id?: string
-  phase_code: string
-  drawing_type: string
-  required_lod: number
-  necessity: '必須' | '任意' | '不要'
+  deadline: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface ChangeDrawingLink {

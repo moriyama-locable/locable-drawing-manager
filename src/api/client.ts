@@ -1,14 +1,4 @@
-import type {
-  ChangeItem,
-  Drawing,
-  DrawingTypeOption,
-  LodDefinition,
-  LodRule,
-  Phase,
-  Project,
-  StatusMasterGroup,
-  StatusMasterItem,
-} from '../types'
+import type { ChangeItem, Drawing, LodDefinition, Phase, Project, StatusMasterGroup, StatusMasterItem } from '../types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -40,8 +30,6 @@ export interface ExportResult {
   drawings_csv: string
   changes_csv: string
   change_drawing_links_csv: string
-  lod_status_csv: string
-  drive_links_csv: string
 }
 
 export function exportProject(projectId: string): Promise<ExportResult> {
@@ -57,9 +45,7 @@ export interface CreateProjectInput {
   current_phase: string
 }
 
-export function createProject(
-  input: CreateProjectInput
-): Promise<{ project_id: string; default_drawings_created: number }> {
+export function createProject(input: CreateProjectInput): Promise<{ project_id: string }> {
   return request('/api/projects', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -73,8 +59,6 @@ export function fetchPhases(): Promise<{ phases: Phase[] }> {
 export interface AdvancePhaseResult {
   project_id: string
   phase_code: string
-  updated_drawings: number
-  created_drawings: number
 }
 
 export function advanceProjectPhase(projectId: string): Promise<AdvancePhaseResult> {
@@ -84,7 +68,6 @@ export function advanceProjectPhase(projectId: string): Promise<AdvancePhaseResu
 export interface RevertPhaseResult {
   project_id: string
   phase_code: string
-  updated_drawings: number
 }
 
 export function revertProjectPhase(projectId: string): Promise<RevertPhaseResult> {
@@ -98,12 +81,10 @@ export function fetchDrawings(projectId: string): Promise<{ drawings: Drawing[] 
 export interface CreateDrawingInput {
   drawing_no: string
   drawing_name: string
-  drawing_type: string
   necessity?: string
-  current_lod?: number
+  lod?: number
   status: string
-  lock_status?: string
-  final_deadline?: string
+  deadline?: string
 }
 
 export function createDrawing(
@@ -119,13 +100,10 @@ export function createDrawing(
 export interface ImportDrawingRow {
   drawing_no: string
   drawing_name: string
-  drawing_type: string
   necessity?: string
-  required_lod?: number
-  current_lod?: number
+  lod?: number
   status: string
-  lock_status?: string
-  final_deadline?: string
+  deadline?: string
 }
 
 export function importDrawings(
@@ -153,40 +131,6 @@ export function updateDrawing(drawingId: string, patch: Partial<Drawing>): Promi
 
 export function fetchLodDefinitions(): Promise<{ lod_definitions: LodDefinition[] }> {
   return request('/api/settings/lod-definitions')
-}
-
-export function fetchLodRules(): Promise<{ lod_rules: LodRule[] }> {
-  return request('/api/settings/lod-rules')
-}
-
-export function saveLodRules(rules: LodRule[]): Promise<unknown> {
-  return request('/api/settings/lod-rules', {
-    method: 'PUT',
-    body: JSON.stringify({ lod_rules: rules }),
-  })
-}
-
-export function fetchDrawingTypes(): Promise<{ drawing_types: DrawingTypeOption[] }> {
-  return request('/api/settings/drawing-types')
-}
-
-export interface DrawingTypeInput {
-  drawing_type: string
-  original_drawing_type?: string
-  sort_order?: number
-}
-
-export function saveDrawingTypes(items: DrawingTypeInput[]): Promise<unknown> {
-  return request('/api/settings/drawing-types', {
-    method: 'PUT',
-    body: JSON.stringify({ drawing_types: items }),
-  })
-}
-
-export function deleteDrawingType(drawingType: string): Promise<void> {
-  return request(`/api/settings/drawing-types?drawing_type=${encodeURIComponent(drawingType)}`, {
-    method: 'DELETE',
-  })
 }
 
 export function fetchStatusMaster(group: StatusMasterGroup): Promise<{ status_master: StatusMasterItem[] }> {
@@ -264,22 +208,16 @@ export function updateChange(changeId: string, patch: Record<string, unknown>): 
 
 export interface DashboardSummary {
   active_projects: number
-  lod_shortage_drawings: number
-  change_alert_drawings: number
   overdue_count: number
-  locked_drawings: number
   status_breakdown: Array<{ status: string; count: number }>
-  lod_distribution: Array<{ current_lod: number; count: number }>
   not_needed_drawings: number
   progress_percent: number
-  today_priority_items: Array<{
+  upcoming_deadlines: Array<{
     drawing_id: string
     drawing_no: string
     drawing_name: string
     project_id: string
-    lod_judgement: string
-    has_change_alert: number
-    priority_score: number | null
+    deadline: string
   }>
 }
 
