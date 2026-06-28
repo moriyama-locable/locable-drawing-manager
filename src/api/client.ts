@@ -2,6 +2,7 @@ import type {
   ChangeItem,
   Drawing,
   DrawingTypeOption,
+  LodDefinition,
   LodRule,
   Phase,
   Project,
@@ -148,6 +149,10 @@ export function updateDrawing(drawingId: string, patch: Partial<Drawing>): Promi
     method: 'PATCH',
     body: JSON.stringify(patch),
   })
+}
+
+export function fetchLodDefinitions(): Promise<{ lod_definitions: LodDefinition[] }> {
+  return request('/api/settings/lod-definitions')
 }
 
 export function fetchLodRules(): Promise<{ lod_rules: LodRule[] }> {

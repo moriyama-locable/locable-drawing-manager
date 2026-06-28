@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchDrawingDetail, fetchDrawingTypes, fetchStatusMaster, updateDrawing } from '../api/client'
-import type { ChangeItem, Drawing } from '../types'
+import { fetchDrawingDetail, fetchDrawingTypes, fetchLodDefinitions, fetchStatusMaster, updateDrawing } from '../api/client'
+import type { ChangeItem, Drawing, LodDefinition } from '../types'
 import LodBadge from './LodBadge'
 
 interface DrawingDetailModalProps {
@@ -54,6 +54,7 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
   const [drawingTypeOptions, setDrawingTypeOptions] = useState<string[]>([])
   const [statusOptions, setStatusOptions] = useState<string[]>([])
   const [lockStatusOptions, setLockStatusOptions] = useState<string[]>([])
+  const [lodOptions, setLodOptions] = useState<LodDefinition[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -80,6 +81,9 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
       .catch(() => {})
     fetchStatusMaster('lock')
       .then((data) => setLockStatusOptions(data.status_master.map((s) => s.status_name)))
+      .catch(() => {})
+    fetchLodDefinitions()
+      .then((data) => setLodOptions(data.lod_definitions))
       .catch(() => {})
   }, [])
 
@@ -259,19 +263,35 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
                 </dd>
                 <dt>必要LOD</dt>
                 <dd>
-                  <input
-                    type="number"
+                  <select
                     value={form.required_lod}
                     onChange={(e) => updateField('required_lod', Number(e.target.value))}
-                  />
+                  >
+                    {!lodOptions.some((l) => l.lod_level === form.required_lod) && (
+                      <option value={form.required_lod}>{form.required_lod}</option>
+                    )}
+                    {lodOptions.map((lod) => (
+                      <option key={lod.lod_level} value={lod.lod_level}>
+                        {lod.lod_name} {lod.description}
+                      </option>
+                    ))}
+                  </select>
                 </dd>
                 <dt>現在LOD</dt>
                 <dd>
-                  <input
-                    type="number"
+                  <select
                     value={form.current_lod}
                     onChange={(e) => updateField('current_lod', Number(e.target.value))}
-                  />
+                  >
+                    {!lodOptions.some((l) => l.lod_level === form.current_lod) && (
+                      <option value={form.current_lod}>{form.current_lod}</option>
+                    )}
+                    {lodOptions.map((lod) => (
+                      <option key={lod.lod_level} value={lod.lod_level}>
+                        {lod.lod_name} {lod.description}
+                      </option>
+                    ))}
+                  </select>
                 </dd>
               </dl>
             </section>

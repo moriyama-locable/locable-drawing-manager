@@ -18,6 +18,13 @@ export interface Project {
 
 export type LodJudgement = '不要' | '不足' | 'OK' | '過剰'
 
+export interface LodDefinition {
+  lod_level: number
+  lod_name: string
+  description: string | null
+  completion_criteria: string | null
+}
+
 export interface DrawingTypeOption {
   drawing_type: string
   sort_order: number | null

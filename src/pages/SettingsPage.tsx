@@ -3,13 +3,15 @@ import {
   deleteDrawingType,
   deleteStatusMasterItem,
   fetchDrawingTypes,
+  fetchLodDefinitions,
   fetchLodRules,
+  fetchPhases,
   fetchStatusMaster,
   saveDrawingTypes,
   saveLodRules,
   saveStatusMaster,
 } from '../api/client'
-import type { DrawingTypeOption, LodRule, StatusMasterItem } from '../types'
+import type { DrawingTypeOption, LodDefinition, LodRule, Phase, StatusMasterItem } from '../types'
 
 function HelpIcon({ text }: { text: string }) {
   return (
@@ -299,6 +301,8 @@ function StatusMasterPanel({
 
 function LodRulesPanel() {
   const [rules, setRules] = useState<LodRule[]>([])
+  const [phases, setPhases] = useState<Phase[]>([])
+  const [lodDefinitions, setLodDefinitions] = useState<LodDefinition[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -306,6 +310,12 @@ function LodRulesPanel() {
     fetchLodRules()
       .then((data) => setRules(data.lod_rules))
       .catch((err: Error) => setError(err.message))
+    fetchPhases()
+      .then((data) => setPhases(data.phases))
+      .catch(() => {})
+    fetchLodDefinitions()
+      .then((data) => setLodDefinitions(data.lod_definitions))
+      .catch(() => {})
   }, [])
 
   function updateRule(index: number, patch: Partial<LodRule>) {
@@ -313,7 +323,7 @@ function LodRulesPanel() {
   }
 
   function addRule() {
-    setRules((prev) => [...prev, { phase_code: '', drawing_type: '', required_lod: 0, necessity: '必須' }])
+    setRules((prev) => [...prev, { phase_code: '', drawing_type: '', required_lod: 1, necessity: '必須' }])
   }
 
   function removeRule(index: number) {
@@ -363,10 +373,17 @@ function LodRulesPanel() {
           {rules.map((rule, index) => (
             <tr key={rule.rule_id ?? `new-${index}`}>
               <td>
-                <input
-                  value={rule.phase_code}
-                  onChange={(e) => updateRule(index, { phase_code: e.target.value })}
-                />
+                <select value={rule.phase_code} onChange={(e) => updateRule(index, { phase_code: e.target.value })}>
+                  <option value="">フェーズを選択</option>
+                  {!phases.some((p) => p.phase_code === rule.phase_code) && rule.phase_code && (
+                    <option value={rule.phase_code}>{rule.phase_code}</option>
+                  )}
+                  {phases.map((phase) => (
+                    <option key={phase.phase_code} value={phase.phase_code}>
+                      {phase.phase_name}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td>
                 <input
@@ -375,13 +392,19 @@ function LodRulesPanel() {
                 />
               </td>
               <td>
-                <input
-                  type="number"
-                  min={0}
-                  max={6}
+                <select
                   value={rule.required_lod}
                   onChange={(e) => updateRule(index, { required_lod: Number(e.target.value) })}
-                />
+                >
+                  {!lodDefinitions.some((l) => l.lod_level === rule.required_lod) && (
+                    <option value={rule.required_lod}>{rule.required_lod}</option>
+                  )}
+                  {lodDefinitions.map((lod) => (
+                    <option key={lod.lod_level} value={lod.lod_level}>
+                      {lod.lod_name} {lod.description}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td>
                 <select
