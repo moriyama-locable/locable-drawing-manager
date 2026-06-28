@@ -85,6 +85,8 @@ function DrawingsPage() {
   const [sortKey, setSortKey] = useState<DrawingSortKey | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [importBusy, setImportBusy] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -211,6 +213,17 @@ function DrawingsPage() {
     if (sortDirection === 'desc') sorted.reverse()
     return sorted
   }, [filteredDrawings, sortKey, sortDirection])
+
+  useEffect(() => {
+    setPage(1)
+  }, [selectedProjectId, searchText, lodFilter, necessityFilter, statusFilter, typeFilter, focus])
+
+  const totalPages = Math.max(1, Math.ceil(sortedDrawings.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pagedDrawings = useMemo(
+    () => sortedDrawings.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [sortedDrawings, currentPage, pageSize]
+  )
 
   function handleSortChange(key: DrawingSortKey) {
     if (sortKey === key) {
@@ -547,6 +560,7 @@ function DrawingsPage() {
             </div>
           )}
 
+          <div className="drawings-table-card">
           <div className="drawings-toolbar">
             <input
               type="search"
@@ -622,7 +636,7 @@ function DrawingsPage() {
             <p className="empty-hint">図面がありません。</p>
           ) : viewMode === 'list' ? (
             <DrawingListView
-              drawings={sortedDrawings}
+              drawings={pagedDrawings}
               onOpenDetail={setSelectedDrawingId}
               onStatusChange={handleStatusChange}
               statusOptions={statusFilterOptions}
@@ -631,8 +645,45 @@ function DrawingsPage() {
               onSortChange={handleSortChange}
             />
           ) : (
-            <DrawingCardView drawings={sortedDrawings} onOpenDetail={setSelectedDrawingId} />
+            <DrawingCardView drawings={pagedDrawings} onOpenDetail={setSelectedDrawingId} />
           )}
+
+          {sortedDrawings.length > 0 && (
+            <div className="drawings-pagination">
+              <span className="drawings-pagination-total">全{sortedDrawings.length}件</span>
+              <div className="drawings-pagination-controls">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ‹
+                </button>
+                <span className="drawings-pagination-page">{currentPage}</span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  ›
+                </button>
+              </div>
+              <label className="lod-filter-select">
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setPage(1)
+                  }}
+                >
+                  <option value={20}>20件 / ページ</option>
+                  <option value={50}>50件 / ページ</option>
+                  <option value={100}>100件 / ページ</option>
+                </select>
+              </label>
+            </div>
+          )}
+          </div>
         </section>
 
         <aside className="drawings-detail-pane">

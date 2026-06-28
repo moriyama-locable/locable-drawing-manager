@@ -117,7 +117,11 @@ function DrawingListView({
                   drawing.status
                 )}
               </td>
-              <td>{drawing.lock_status}</td>
+              <td>
+                <span className={drawing.lock_status === '編集可' ? 'lock-badge unlocked' : 'lock-badge locked'}>
+                  {drawing.lock_status}
+                </span>
+              </td>
               <td>{drawing.final_deadline ?? '-'}</td>
               <td>{drawing.has_change_alert ? <span className="alert-tag">影響あり</span> : 'なし'}</td>
               <td>{noActionNeeded ? <span className="no-action-tag">対応不要</span> : drawing.next_action ?? '-'}</td>
