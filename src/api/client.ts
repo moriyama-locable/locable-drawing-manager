@@ -42,7 +42,8 @@ export function archiveProject(projectId: string): Promise<{ project_id: string;
 
 export interface CreateProjectInput {
   project_name: string
-  current_phase: string
+  current_phase?: string
+  due_date?: string
 }
 
 export function createProject(input: CreateProjectInput): Promise<{ project_id: string }> {
@@ -79,8 +80,8 @@ export function fetchDrawings(projectId: string): Promise<{ drawings: Drawing[] 
 }
 
 export interface CreateDrawingInput {
-  drawing_no: string
   drawing_name: string
+  drawing_type?: string
   necessity?: string
   lod?: number
   status: string
@@ -100,6 +101,7 @@ export function createDrawing(
 export interface ImportDrawingRow {
   drawing_no: string
   drawing_name: string
+  drawing_type?: string
   necessity?: string
   lod?: number
   status: string

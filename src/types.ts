@@ -8,6 +8,7 @@ export interface Project {
   project_id: string
   project_name: string
   current_phase: string
+  due_date: string | null
   project_status: 'active' | 'completed' | 'archived'
   sort_order: number | null
   alert_count?: number
@@ -33,12 +34,15 @@ export interface StatusMasterItem {
   progress_percent: number | null
 }
 
+export type DrawingType = '建築図' | '電気設備図' | '機械設備図' | '詳細図'
+
 export interface Drawing {
   drawing_id: string
   project_id: string
   drawing_no: string
   drawing_name: string
-  necessity: '必須' | '任意' | '不要'
+  drawing_type: DrawingType
+  necessity: '必要' | '任意' | '不要'
   lod: number
   status: string
   deadline: string | null

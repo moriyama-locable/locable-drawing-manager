@@ -1,10 +1,10 @@
 import type { Env } from './_lib/types'
 
 const STATUS_PROGRESS: Record<string, number> = {
-  未着手: 0,
-  作図中: 50,
-  確認中: 70,
-  承認済: 100,
+  未着手: 30,
+  進行中: 50,
+  確認中: 80,
+  完了: 100,
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
@@ -24,7 +24,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         .first<{ count: number }>(),
       (() => {
         const stmt = db.prepare(
-          `SELECT COUNT(*) AS count FROM drawings WHERE deadline IS NOT NULL AND deadline < ? AND status != '承認済' ${drawingProjectFilter}`
+          `SELECT COUNT(*) AS count FROM drawings WHERE deadline IS NOT NULL AND deadline < ? AND status != '完了' ${drawingProjectFilter}`
         )
         return projectId ? stmt.bind(today, projectId) : stmt.bind(today)
       })().first<{ count: number }>(),
@@ -38,7 +38,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         db.prepare(
           `SELECT drawing_id, drawing_no, drawing_name, project_id, deadline
            FROM drawings
-           WHERE deadline IS NOT NULL AND status != '承認済' ${drawingProjectFilter}
+           WHERE deadline IS NOT NULL AND status != '完了' ${drawingProjectFilter}
            ORDER BY deadline ASC
            LIMIT 10`
         )

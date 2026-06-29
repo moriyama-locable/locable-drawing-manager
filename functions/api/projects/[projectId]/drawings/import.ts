@@ -4,6 +4,7 @@ import { generateId, jsonError, nowIso, writeAuditLog } from '../../../_lib/http
 interface ImportRow {
   drawing_no?: string
   drawing_name?: string
+  drawing_type?: string
   necessity?: string
   lod?: number
   status?: string
@@ -45,13 +46,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     statements.push(
       context.env.DB.prepare(
         `INSERT INTO drawings (
-          drawing_id, project_id, drawing_no, drawing_name, necessity, lod, status, deadline, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          drawing_id, project_id, drawing_no, drawing_name, drawing_type, necessity, lod, status, deadline, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         drawingId,
         projectId,
         row.drawing_no,
         row.drawing_name,
+        row.drawing_type ?? '建築図',
         row.necessity ?? '任意',
         row.lod ?? 0,
         row.status,

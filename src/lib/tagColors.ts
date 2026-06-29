@@ -10,7 +10,7 @@ const PALETTE = [
 ]
 
 const NECESSITY_COLORS: Record<string, { bg: string; color: string }> = {
-  必須: { bg: '#fdeae6', color: '#c0432a' },
+  必要: { bg: '#fdeae6', color: '#c0432a' },
   任意: { bg: '#e6f0fb', color: '#2563a8' },
   不要: { bg: '#eef0f3', color: '#5a6270' },
 }

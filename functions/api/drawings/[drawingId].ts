@@ -26,7 +26,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   return Response.json({ drawing, related_changes: relatedChanges })
 }
 
-const PATCHABLE_FIELDS = ['drawing_no', 'drawing_name', 'necessity', 'lod', 'status', 'deadline'] as const
+const PATCHABLE_FIELDS = ['drawing_no', 'drawing_name', 'drawing_type', 'necessity', 'lod', 'status', 'deadline'] as const
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const drawingId = context.params.drawingId as string
