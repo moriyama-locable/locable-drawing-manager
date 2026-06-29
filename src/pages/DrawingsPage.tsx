@@ -125,7 +125,10 @@ function DrawingsPage() {
   }
 
   async function handleCreateProject() {
-    if (!newProjectName) return
+    if (!newProjectName) {
+      setNewProjectError('プロジェクト名を入力してください')
+      return
+    }
     try {
       const { project_id } = await createProject({
         project_name: newProjectName,
