@@ -7,9 +7,11 @@ interface DrawingCreateFormProps {
   onCreated: () => void
 }
 
+const DRAWING_TYPE_OPTIONS = ['建築図', '電気設備図', '機械設備図', '詳細図'] as const
+
 function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
-  const [drawingNo, setDrawingNo] = useState('')
   const [drawingName, setDrawingName] = useState('')
+  const [drawingType, setDrawingType] = useState<string>(DRAWING_TYPE_OPTIONS[0])
   const [necessity, setNecessity] = useState('任意')
   const [lod, setLod] = useState(0)
   const [status, setStatus] = useState('')
@@ -32,17 +34,16 @@ function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
   }, [])
 
   async function handleCreate() {
-    if (!drawingNo || !drawingName || !status) return
+    if (!drawingName || !status) return
     try {
       await createDrawing(projectId, {
-        drawing_no: drawingNo,
         drawing_name: drawingName,
+        drawing_type: drawingType,
         necessity,
         lod,
         status,
         deadline: deadline || undefined,
       })
-      setDrawingNo('')
       setDrawingName('')
       setDeadline('')
       setError(null)
@@ -54,10 +55,16 @@ function DrawingCreateForm({ projectId, onCreated }: DrawingCreateFormProps) {
 
   return (
     <div className="change-form drawing-create-form">
-      <input placeholder="図面番号" value={drawingNo} onChange={(e) => setDrawingNo(e.target.value)} />
       <input placeholder="図面名" value={drawingName} onChange={(e) => setDrawingName(e.target.value)} />
+      <select value={drawingType} onChange={(e) => setDrawingType(e.target.value)}>
+        {DRAWING_TYPE_OPTIONS.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
       <select value={necessity} onChange={(e) => setNecessity(e.target.value)}>
-        <option value="必須">必須</option>
+        <option value="必要">必要</option>
         <option value="任意">任意</option>
         <option value="不要">不要</option>
       </select>

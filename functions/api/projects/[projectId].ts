@@ -1,7 +1,7 @@
 import type { Env } from '../_lib/types'
 import { jsonError, nowIso, writeAuditLog } from '../_lib/http'
 
-const PATCHABLE_FIELDS = ['project_name', 'current_phase', 'project_status', 'sort_order'] as const
+const PATCHABLE_FIELDS = ['project_name', 'current_phase', 'due_date', 'project_status', 'sort_order'] as const
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const projectId = context.params.projectId as string

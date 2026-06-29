@@ -2,17 +2,26 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Drawing } from '../types'
 import TagBadge from './TagBadge'
 
-export type DrawingSortKey = 'drawing_no' | 'drawing_name' | 'necessity' | 'lod' | 'status' | 'deadline'
+export type DrawingSortKey =
+  | 'drawing_no'
+  | 'drawing_name'
+  | 'drawing_type'
+  | 'necessity'
+  | 'lod'
+  | 'status'
+  | 'deadline'
 
 export type SortDirection = 'asc' | 'desc'
 
-export type DrawingGroupKey = 'none' | 'status' | 'necessity'
+export type DrawingGroupKey = 'none' | 'status' | 'necessity' | 'drawing_type'
 
-const NECESSITY_OPTIONS = ['必須', '任意', '不要'] as const
+const NECESSITY_OPTIONS = ['必要', '任意', '不要'] as const
+const DRAWING_TYPE_OPTIONS = ['建築図', '電気設備図', '機械設備図', '詳細図'] as const
 
 const COLUMNS: Array<{ key: DrawingSortKey; label: string }> = [
   { key: 'drawing_no', label: '図面番号' },
   { key: 'drawing_name', label: '図面名称' },
+  { key: 'drawing_type', label: '属性' },
   { key: 'necessity', label: '必要性' },
   { key: 'lod', label: 'LOD' },
   { key: 'status', label: 'ステータス' },
@@ -234,6 +243,19 @@ function DrawingRow({
       <td>
         {onFieldChange ? (
           <EditableTag
+            value={drawing.drawing_type}
+            options={[...DRAWING_TYPE_OPTIONS]}
+            onCommit={(next) =>
+              onFieldChange(drawing.drawing_id, { drawing_type: next as Drawing['drawing_type'] })
+            }
+          />
+        ) : (
+          <TagBadge value={drawing.drawing_type} />
+        )}
+      </td>
+      <td>
+        {onFieldChange ? (
+          <EditableTag
             value={drawing.necessity}
             options={[...NECESSITY_OPTIONS]}
             onCommit={(next) =>
@@ -299,7 +321,12 @@ function DrawingListView({
       ? [{ key: 'all', label: '', rows: drawings }]
       : Array.from(
           drawings.reduce((map, drawing) => {
-            const groupValue = groupBy === 'status' ? drawing.status : drawing.necessity
+            const groupValue =
+              groupBy === 'status'
+                ? drawing.status
+                : groupBy === 'drawing_type'
+                  ? drawing.drawing_type
+                  : drawing.necessity
             const existing = map.get(groupValue) ?? []
             existing.push(drawing)
             map.set(groupValue, existing)

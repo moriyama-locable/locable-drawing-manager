@@ -22,6 +22,7 @@ function DrawingCardView({ drawings, onOpenDetail }: DrawingCardViewProps) {
           </div>
           <div className="drawing-card-name">{drawing.drawing_name}</div>
           <div className="drawing-card-meta">
+            <TagBadge value={drawing.drawing_type} />
             <TagBadge value={drawing.necessity} />
             <TagBadge value={drawing.status} />
           </div>

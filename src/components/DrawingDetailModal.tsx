@@ -9,10 +9,13 @@ interface DrawingDetailModalProps {
   variant?: 'modal' | 'panel'
 }
 
-type EditableDrawing = Pick<Drawing, 'necessity' | 'lod' | 'status' | 'deadline'>
+const DRAWING_TYPE_OPTIONS = ['建築図', '電気設備図', '機械設備図', '詳細図'] as const
+
+type EditableDrawing = Pick<Drawing, 'drawing_type' | 'necessity' | 'lod' | 'status' | 'deadline'>
 
 function toForm(drawing: Drawing): EditableDrawing {
   return {
+    drawing_type: drawing.drawing_type,
     necessity: drawing.necessity,
     lod: drawing.lod,
     status: drawing.status,
@@ -113,6 +116,10 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
             <section>
               <h3>基本情報</h3>
               <dl className="detail-grid">
+                <dt>属性</dt>
+                <dd>
+                  <TagBadge value={drawing.drawing_type} />
+                </dd>
                 <dt>必要性</dt>
                 <dd>
                   <TagBadge value={drawing.necessity} />
@@ -161,13 +168,26 @@ function DrawingDetailModal({ drawingId, onClose, variant = 'modal' }: DrawingDe
             <section>
               <h3>基本情報</h3>
               <dl className="detail-grid">
+                <dt>属性</dt>
+                <dd>
+                  <select
+                    value={form.drawing_type}
+                    onChange={(e) => updateField('drawing_type', e.target.value as EditableDrawing['drawing_type'])}
+                  >
+                    {DRAWING_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
                 <dt>必要性</dt>
                 <dd>
                   <select
                     value={form.necessity}
                     onChange={(e) => updateField('necessity', e.target.value as EditableDrawing['necessity'])}
                   >
-                    <option value="必須">必須</option>
+                    <option value="必要">必要</option>
                     <option value="任意">任意</option>
                     <option value="不要">不要</option>
                   </select>

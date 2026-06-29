@@ -1,5 +1,6 @@
 import type { Env } from '../../_lib/types'
 import { generateId, jsonError, nowIso, writeAuditLog } from '../../_lib/http'
+import { drawingNoPrefix } from '../../_lib/drawings'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const projectId = context.params.projectId as string
@@ -16,16 +17,16 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const projectId = context.params.projectId as string
   const body = await context.request.json<{
-    drawing_no?: string
     drawing_name?: string
+    drawing_type?: string
     necessity?: string
     lod?: number
     status?: string
     deadline?: string
   }>()
 
-  if (!body.drawing_no || !body.drawing_name || !body.status) {
-    return jsonError('drawing_no, drawing_name and status are required', 'INVALID_BODY')
+  if (!body.drawing_name || !body.status) {
+    return jsonError('drawing_name and status are required', 'INVALID_BODY')
   }
 
   const project = await context.env.DB.prepare(
@@ -38,19 +39,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return jsonError('Project not found', 'NOT_FOUND', 404)
   }
 
+  const drawingType = body.drawing_type ?? '建築図'
+  const countRow = await context.env.DB.prepare(`SELECT COUNT(*) AS count FROM drawings WHERE project_id = ?`)
+    .bind(projectId)
+    .first<{ count: number }>()
+  const drawingNo = `${drawingNoPrefix(drawingType)}${(countRow?.count ?? 0) + 1}`
+
   const drawingId = generateId('DWG')
   const now = nowIso()
 
   await context.env.DB.prepare(
     `INSERT INTO drawings (
-      drawing_id, project_id, drawing_no, drawing_name, necessity, lod, status, deadline, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      drawing_id, project_id, drawing_no, drawing_name, drawing_type, necessity, lod, status, deadline, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       drawingId,
       projectId,
-      body.drawing_no,
+      drawingNo,
       body.drawing_name,
+      drawingType,
       body.necessity ?? '任意',
       body.lod ?? 0,
       body.status,

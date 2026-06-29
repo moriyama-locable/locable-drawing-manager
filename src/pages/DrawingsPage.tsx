@@ -26,7 +26,7 @@ import DrawingCreateForm from '../components/DrawingCreateForm'
 import { type Drawing, type Phase, type Project, type StatusMasterItem } from '../types'
 import { buildDrawingImportTemplate, parseCsv } from '../lib/csv'
 
-const NECESSITY_FILTER_OPTIONS = ['all', '必須', '任意', '不要'] as const
+const NECESSITY_FILTER_OPTIONS = ['all', '必要', '任意', '不要'] as const
 type NecessityFilter = (typeof NECESSITY_FILTER_OPTIONS)[number]
 
 function compareDrawingValues(a: unknown, b: unknown): number {
@@ -76,6 +76,7 @@ function DrawingsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectPhase, setNewProjectPhase] = useState('')
+  const [newProjectDueDate, setNewProjectDueDate] = useState('')
   const [newProjectError, setNewProjectError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -124,14 +125,16 @@ function DrawingsPage() {
   }
 
   async function handleCreateProject() {
-    if (!newProjectName || !newProjectPhase) return
+    if (!newProjectName) return
     try {
       const { project_id } = await createProject({
         project_name: newProjectName,
-        current_phase: newProjectPhase,
+        current_phase: newProjectPhase || undefined,
+        due_date: newProjectDueDate || undefined,
       })
       setNewProjectName('')
       setNewProjectPhase('')
+      setNewProjectDueDate('')
       setNewProjectError(null)
       handleProjectCreated(project_id)
     } catch (err) {
@@ -486,7 +489,7 @@ function DrawingsPage() {
             )}
 
             <select value={newProjectPhase} onChange={(e) => setNewProjectPhase(e.target.value)}>
-              <option value="">フェーズを選択</option>
+              <option value="">フェーズを選択（未選択時は企画）</option>
               {phases.map((phase) => (
                 <option key={phase.phase_code} value={phase.phase_code}>
                   {phase.phase_name}
@@ -497,6 +500,12 @@ function DrawingsPage() {
               placeholder="プロジェクト名"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
+            />
+            <input
+              type="date"
+              title="完了予定日"
+              value={newProjectDueDate}
+              onChange={(e) => setNewProjectDueDate(e.target.value)}
             />
             <button type="button" onClick={handleCreateProject}>
               + プロジェクト追加
@@ -606,6 +615,7 @@ function DrawingsPage() {
                   <option value="none">なし</option>
                   <option value="status">ステータス</option>
                   <option value="necessity">必要性</option>
+                  <option value="drawing_type">属性</option>
                 </select>
               </label>
             )}
